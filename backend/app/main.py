@@ -8,6 +8,12 @@ from pymongo.errors import BulkWriteError
 from app.database import get_database, check_db_health
 from app.models import TelemetryBatch, IncidentActionRequest
 from app.analytics import get_hourly_summary_pipeline, get_trend_and_anomalies_pipeline
+from app.datadog_service import (
+    is_datadog_configured,
+    send_metrics_to_datadog,
+    send_log_to_datadog,
+    send_incident_event
+)
 
 # Setup logging chuẩn Datadog Log Injection
 logging.basicConfig(
@@ -35,9 +41,11 @@ COLLECTION_NAME = "fridge_telemetry"
 @app.get("/health")
 def health_check():
     db_status = check_db_health()
+    dd_ready = is_datadog_configured()
     return {
         "status": "healthy" if db_status["status"] == "connected" else "degraded",
         "database": db_status,
+        "datadog_connected": dd_ready,
         "service": os.getenv("DD_SERVICE", "smart-fridge-service"),
         "timestamp": datetime.now(timezone.utc)
     }
@@ -45,10 +53,10 @@ def health_check():
 @app.post("/api/telemetry/ingest", status_code=status.HTTP_201_CREATED)
 def ingest_telemetry(batch: TelemetryBatch):
     """
-    Ingest batch dữ liệu cảm biến vào MongoDB Time Series.
-    Áp dụng kỹ thuật:
-    - insertMany với ordered=False (Slide 13)
-    - Tự động kiểm tra cảnh báo nếu nhiệt độ vượt ngưỡng an toàn
+    Ingest batch dữ liệu cảm biến:
+    1. Ghi vào MongoDB Time Series Collection (insertMany ordered=False)
+    2. Đẩy chỉ số thời gian thực lên Datadog Metrics API
+    3. Tự động kiểm tra cảnh báo và bắn Event/Log lên Datadog
     """
     if not batch.readings:
         raise HTTPException(status_code=400, detail="Batch rỗng")
@@ -59,6 +67,7 @@ def ingest_telemetry(batch: TelemetryBatch):
     docs = [item.model_dump() for item in batch.readings]
     inserted_count = 0
 
+    # 1. Lưu vào MongoDB Time Series
     try:
         result = coll.insert_many(docs, ordered=False)
         inserted_count = len(result.inserted_ids)
@@ -66,19 +75,34 @@ def ingest_telemetry(batch: TelemetryBatch):
         inserted_count = bwe.details.get("nInserted", 0)
         logger.warning(f"BulkWriteWarning: Chỉ ghi thành công {inserted_count}/{len(docs)} bản ghi")
 
-    # Kiểm tra ngưỡng nguy hiểm để log sự cố (Datadog Monitors sẽ theo dõi log này)
+    # 2. Đẩy Metrics trực tiếp lên Datadog (smartfridge.temperature, power, door_open)
+    send_metrics_to_datadog(docs)
+
+    # 3. Kiểm tra ngưỡng nguy hiểm để bắn Alert & Log lên Datadog
     for r in batch.readings:
-        # Ngăn mát (fridge) > 10°C hoặc Ngăn đông (freezer) > -5°C khi cửa mở quá lâu
         if (r.sensor.compartment == "fridge" and r.temperature > 10.0) or \
            (r.sensor.compartment == "freezer" and r.temperature > -5.0):
-            logger.error(
+            alert_msg = (
                 f"[INCIDENT_ALERT] Thiết bị {r.sensor.id} ({r.sensor.compartment}) "
                 f"quá nhiệt nguy hiểm: {r.temperature}°C, Door Open={r.door_open}, Power={r.power_watts}W"
+            )
+            logger.error(alert_msg)
+            # Bắn Log và Event trực tiếp sang Datadog
+            send_log_to_datadog(
+                alert_msg,
+                status="error",
+                extra_tags=[f"device:{r.sensor.id}", f"compartment:{r.sensor.compartment}"]
+            )
+            send_incident_event(
+                title=f"Quá nhiệt tại {r.sensor.id} ({r.sensor.compartment})",
+                text=alert_msg,
+                alert_type="error"
             )
 
     return {
         "status": "success",
-        "inserted": inserted_count,
+        "inserted_mongo": inserted_count,
+        "sent_datadog": is_datadog_configured(),
         "total": len(docs)
     }
 
@@ -129,9 +153,18 @@ def respond_incident(req: IncidentActionRequest):
     }
     db.incidents.insert_one(incident_record)
     
-    logger.info(
+    resolve_msg = (
         f"[INCIDENT_RESOLVED] Đã thực thi khắc phục cho thiết bị {req.device_id} "
         f"({req.compartment}) với hành động: {req.action}"
+    )
+    logger.info(resolve_msg)
+
+    # Gửi tín hiệu giải quyết sự cố lên Datadog
+    send_log_to_datadog(resolve_msg, status="info", extra_tags=[f"device:{req.device_id}"])
+    send_incident_event(
+        title=f"Đã khắc phục: {req.device_id}",
+        text=resolve_msg,
+        alert_type="success"
     )
 
     return {
