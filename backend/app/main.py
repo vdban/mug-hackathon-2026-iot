@@ -3,6 +3,7 @@ import logging
 from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pymongo.errors import BulkWriteError
 
 from app.database import get_database, check_db_health
@@ -37,6 +38,13 @@ app.add_middleware(
 )
 
 COLLECTION_NAME = "fridge_telemetry"
+
+@app.get("/", response_class=FileResponse)
+def serve_dashboard():
+    static_file = os.path.join(os.path.dirname(__file__), "static", "index.html")
+    if os.path.exists(static_file):
+        return FileResponse(static_file)
+    return {"message": "Smart Fridge IoT API running. Visit /docs for Swagger."}
 
 @app.get("/health")
 def health_check():
