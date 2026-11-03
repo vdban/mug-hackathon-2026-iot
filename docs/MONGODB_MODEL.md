@@ -1,4 +1,4 @@
-# MongoDB Data Architecture & Aggregation Pipelines
+# MongoDB Data Architecture & Aggregation Pipelines: Smart Hydroponics
 
 Tài liệu này chi tiết hóa cách thiết kế và triển khai MongoDB bám sát toàn bộ hướng dẫn trong buổi **Workshop "Time Series in MongoDB"** của MongoDB User Group Vietnam.
 
@@ -6,33 +6,35 @@ Tài liệu này chi tiết hóa cách thiết kế và triển khai MongoDB bá
 
 ## 1. Thiết kế Data Model: One Reading, Three Parts (Slide 5)
 
-Mỗi bản ghi telemetry cảm biến tuân thủ cấu trúc chuẩn 3 phần:
+Mỗi bản ghi telemetry cảm biến thủy canh tuân thủ cấu trúc chuẩn 3 phần:
 
 ```json
 {
-  "ts": ISODate("2026-11-03T08:00:00Z"),
+  "ts": ISODate("2026-11-04T08:00:00Z"),
   "sensor": {
-    "id": "FRIDGE-KITCHEN-01",
-    "compartment": "fridge",
-    "model": "Inverter Pro 550L"
+    "id": "HYDROPONIC-RACK-01",
+    "zone": "Balcony 1F",
+    "crop": "Lettuce",
+    "system_type": "NFT-Vertical"
   },
-  "temperature": 4.2,
-  "humidity": 65.0,
-  "door_open": false,
-  "power_watts": 62.5
+  "ph": 6.12,
+  "ec_ppm": 960.0,
+  "water_temp": 21.4,
+  "water_level_pct": 88.0,
+  "pump_flow_lpm": 4.52
 }
 ```
 
-* **`timeField` (`ts`):** Sử dụng kiểu `ISODate` chuẩn của MongoDB (Date object trong Python/Node.js), tuyệt đối không lưu dạng chuỗi string (Slide 26).
-* **`metaField` (`sensor`):** Định danh nguồn phát sinh dữ liệu gồm `id` tủ lạnh, `compartment` (ngăn đông/mát) và `model`. Các trường này hiếm khi thay đổi, giúp MongoDB gom nhóm chính xác các bản ghi của cùng một sensor vào cùng một bucket lưu trữ (Slide 11).
-* **`measurements`:** Các thông số đo biến thiên liên tục: `temperature`, `humidity`, `door_open`, `power_watts`.
+* **`timeField` (`ts`):** Kiểu `ISODate` chuẩn của MongoDB (Date object trong Python), tuyệt đối không lưu dạng chuỗi string (Slide 26).
+* **`metaField` (`sensor`):** Định danh nguồn phát sinh dữ liệu gồm `id`, `zone`, `crop`, và `system_type`. Giúp MongoDB gom nhóm chính xác các bản ghi của cùng một giàn vào cùng một bucket lưu trữ (Slide 11).
+* **`measurements`:** Các thông số đo biến thiên liên tục: `ph`, `ec_ppm`, `water_temp`, `water_level_pct`, `pump_flow_lpm`.
 
 ---
 
 ## 2. Cấu hình Time Series Collection (Slide 10)
 
 ```javascript
-db.createCollection("fridge_telemetry", {
+db.createCollection("hydroponic_telemetry", {
   timeseries: {
     timeField: "ts",
     metaField: "sensor",
@@ -49,36 +51,35 @@ db.createCollection("fridge_telemetry", {
 
 ## 3. Tối ưu hóa Truy vấn & Chỉ mục (Indexes) (Slide 20)
 
-Tạo compound index phục vụ chính xác các bộ lọc trong nghiệp vụ giám sát:
+Tạo compound index phục vụ chính xác các bộ lọc trong nghiệp vụ giám sát nông nghiệp:
 
 ```javascript
-db.fridge_telemetry.createIndex({ "sensor.id": 1, "ts": -1 });
-db.fridge_telemetry.createIndex({ "sensor.compartment": 1, "ts": -1 });
+db.hydroponic_telemetry.createIndex({ "sensor.id": 1, "ts": -1 });
+db.hydroponic_telemetry.createIndex({ "sensor.crop": 1, "ts": -1 });
 ```
-
-Nhờ có index trên `metaField` và `timeField`, MongoDB có thể đọc trực tiếp metadata của bucket (`control.min` và `control.max`) và bỏ qua (skip) toàn bộ các bucket không thỏa mãn điều kiện thời gian mà không cần đọc nội dung bên trong.
 
 ---
 
 ## 4. Aggregation Pipelines (Slides 16–19)
 
 ### 4.1 Pipeline Phân tích Trung bình theo Giờ (Hourly Summary)
-Phục vụ báo cáo tiêu thụ điện năng và nhiệt độ trung bình:
+Phục vụ báo cáo nồng độ dinh dưỡng và lưu lượng nước theo từng giờ:
 
 ```javascript
 [
   // Stage 1: $match ĐẦU TIÊN để skip bucket và tận dụng Index (Slide 16)
   {
     $match: {
-      "ts": { $gte: ISODate("2026-11-02T00:00:00Z") }
+      "ts": { $gte: ISODate("2026-11-03T00:00:00Z") }
     }
   },
   // Stage 2: $group gom theo giờ với timezone Việt Nam (Slide 18)
   {
     $group: {
       _id: {
-        device: "$sensor.id",
-        compartment: "$sensor.compartment",
+        rack: "$sensor.id",
+        crop: "$sensor.crop",
+        zone: "$sensor.zone",
         hour: {
           $dateTrunc: {
             date: "$ts",
@@ -87,11 +88,12 @@ Phục vụ báo cáo tiêu thụ điện năng và nhiệt độ trung bình:
           }
         }
       },
-      avgTemp: { $avg: "$temperature" },
-      minTemp: { $min: "$temperature" },
-      maxTemp: { $max: "$temperature" },
-      avgPower: { $avg: "$power_watts" },
-      doorOpenCount: { $sum: { $cond: ["$door_open", 1, 0] } },
+      avgPh: { $avg: "$ph" },
+      minPh: { $min: "$ph" },
+      maxPh: { $max: "$ph" },
+      avgEc: { $avg: "$ec_ppm" },
+      avgFlow: { $avg: "$pump_flow_lpm" },
+      avgWaterLevel: { $avg: "$water_level_pct" },
       totalReadings: { $count: {} }
     }
   },
@@ -101,19 +103,17 @@ Phục vụ báo cáo tiêu thụ điện năng và nhiệt độ trung bình:
   {
     $project: {
       _id: 0,
-      device: "$_id.device",
-      compartment: "$_id.compartment",
+      rack: "$_id.rack",
+      crop: "$_id.crop",
+      zone: "$_id.zone",
       hour: "$_id.hour",
-      avgTemperature: { $round: ["$avgTemp", 1] },
-      minTemperature: { $round: ["$minTemp", 1] },
-      maxTemperature: { $round: ["$maxTemp", 1] },
-      avgPowerWatts: { $round: ["$avgPower", 1] },
-      doorOpenPercent: {
-        $round: [
-          { $multiply: [{ $divide: ["$doorOpenCount", "$totalReadings"] }, 100] },
-          1
-        ]
-      }
+      avgPh: { $round: ["$avgPh", 2] },
+      minPh: { $round: ["$minPh", 2] },
+      maxPh: { $round: ["$maxPh", 2] },
+      avgEcPpm: { $round: ["$avgEc", 0] },
+      avgFlowLpm: { $round: ["$avgFlow", 2] },
+      avgWaterLevelPct: { $round: ["$avgWaterLevel", 1] },
+      totalReadings: 1
     }
   }
 ]
@@ -126,9 +126,8 @@ Sử dụng toán tử `$setWindowFields` để tính **Moving Average (trung b�
 [
   {
     $match: {
-      "sensor.id": "FRIDGE-KITCHEN-01",
-      "sensor.compartment": "fridge",
-      "ts": { $gte: ISODate("2026-11-03T07:30:00Z") }
+      "sensor.id": "HYDROPONIC-RACK-01",
+      "ts": { $gte: ISODate("2026-11-04T07:30:00Z") }
     }
   },
   { $sort: { "ts": 1 } },
@@ -136,8 +135,12 @@ Sử dụng toán tử `$setWindowFields` để tính **Moving Average (trung b�
     $setWindowFields: {
       sortBy: { ts: 1 },
       output: {
-        movingAvgTemp: {
-          $avg: "$temperature",
+        movingAvgFlow: {
+          $avg: "$pump_flow_lpm",
+          window: { documents: [-4, 0] }
+        },
+        movingAvgPh: {
+          $avg: "$ph",
           window: { documents: [-4, 0] }
         }
       }
@@ -145,4 +148,4 @@ Sử dụng toán tử `$setWindowFields` để tính **Moving Average (trung b�
   }
 ]
 ```
-Kỹ thuật này cho phép hệ thống nhận biết nhiệt độ đang có xu hướng dốc lên liên tục ngay cả khi chưa chạm ngưỡng nguy hiểm, giúp cảnh báo sớm cho người dùng.
+Kỹ thuật này cho phép hệ thống nhận biết lưu lượng tuần hoàn đang giảm dốc đứng hoặc pH đang kiềm hóa trước khi rễ cây bị nghẹt thở hoàn toàn.

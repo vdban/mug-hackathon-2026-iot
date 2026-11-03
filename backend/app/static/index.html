@@ -3,29 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Fridge Fleet Operations | Live Monitor</title>
+  <title>Smart Hydroponics Farm | Real-time Operations Monitor</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    @keyframes pulse-slow { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-    .pulse-danger { animation: pulse-slow 1.5s infinite; }
+    @keyframes pulse-slow { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .pulse-danger { animation: pulse-slow 1.2s infinite; }
   </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans">
   <!-- Top Navigation -->
-  <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
+  <header class="border-b border-emerald-900/40 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
     <div class="flex items-center space-x-3">
-      <span class="text-2xl">🧊</span>
+      <span class="text-2xl">🌱</span>
       <div>
-        <h1 class="text-lg font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-          Smart Fridge Fleet Operations
+        <h1 class="text-lg font-bold bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
+          Smart Hydroponics Fleet Operations
         </h1>
         <p class="text-xs text-slate-400">MongoDB User Group Vietnam Hackathon 2026 • Real-time Operations</p>
       </div>
     </div>
     <div class="flex items-center space-x-4">
-      <span id="sysStatus" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-950 text-emerald-400 border border-emerald-800">
-        <span class="w-2 h-2 mr-2 rounded-full bg-emerald-400 animate-pulse"></span> SYSTEM HEALTHY
+      <span id="sysStatus" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-950 text-emerald-300 border border-emerald-700/60 shadow-sm">
+        <span class="w-2 h-2 mr-2 rounded-full bg-emerald-400 animate-pulse"></span> ALL SYSTEMS HEALTHY
       </span>
       <a href="/docs" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 transition">Swagger API</a>
     </div>
@@ -33,143 +33,172 @@
 
   <main class="max-w-7xl mx-auto p-6 space-y-6">
     <!-- Quick Actions / Incident Demo Toolbar -->
-    <div class="bg-slate-800/80 rounded-xl p-5 border border-slate-700 flex flex-wrap items-center justify-between gap-4 shadow-lg">
+    <div class="bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 rounded-xl p-5 border border-emerald-900/40 flex flex-wrap items-center justify-between gap-4 shadow-xl">
       <div>
-        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300">🎮 Hackathon Live Demo Controller</h2>
-        <p class="text-xs text-slate-400 mt-0.5">Kích hoạt hoặc xử lý sự cố quên đóng cửa tủ lạnh tại Bếp chính (FRIDGE-KITCHEN-01)</p>
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+          <span>🎮</span> Hackathon Real-time Incident Controller
+        </h2>
+        <p class="text-xs text-slate-400 mt-0.5">Kích hoạt sự cố nghẹt ống tuần hoàn & kiềm hóa pH tại Giàn Xà lách (HYDROPONIC-RACK-01)</p>
       </div>
       <div class="flex items-center space-x-3">
-        <button id="btnFault" onclick="triggerIncident(true)" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white text-xs font-bold rounded-lg shadow-md transition flex items-center space-x-1.5">
-          <span>🚨</span><span>Kích hoạt sự cố (Door Ajar)</span>
+        <button id="btnFault" onclick="triggerIncident(true)" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white text-xs font-bold rounded-lg shadow-lg shadow-rose-950/50 transition flex items-center space-x-2">
+          <span>🚨</span><span>Kích hoạt sự cố (Nghẹt ống & Tăng pH)</span>
         </button>
-        <button id="btnResolve" onclick="triggerIncident(false)" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-bold rounded-lg shadow-md transition flex items-center space-x-1.5">
-          <span>🛠️</span><span>Khắc phục tự động (Respond)</span>
+        <button id="btnResolve" onclick="triggerIncident(false)" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-bold rounded-lg shadow-lg shadow-emerald-950/50 transition flex items-center space-x-2">
+          <span>🛠️</span><span>Khắc phục tự động (Reverse Flush & pH Down)</span>
         </button>
       </div>
     </div>
 
-    <!-- Fridge Cards Grid -->
+    <!-- Hydroponic Racks Grid -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <!-- Fridge 1: Kitchen -->
-      <div id="card-kitchen" class="bg-slate-800/50 rounded-xl p-5 border border-slate-700 transition duration-300 relative overflow-hidden">
+      <!-- Rack 1: Balcony Lettuce -->
+      <div id="card-rack1" class="bg-slate-900/80 rounded-xl p-5 border border-slate-800 transition duration-300 relative overflow-hidden shadow-lg">
         <div class="flex justify-between items-start mb-3">
           <div>
-            <span class="text-xs font-mono text-cyan-400">FRIDGE-KITCHEN-01</span>
-            <h3 class="font-bold text-slate-200">Tủ lạnh Bếp chính</h3>
-            <p class="text-xs text-slate-400">Kitchen 1F • Inverter Pro 550L</p>
+            <span class="text-xs font-mono text-emerald-400">HYDROPONIC-RACK-01</span>
+            <h3 class="font-bold text-slate-100 flex items-center gap-1.5">
+              <span>🥬</span> Giàn Xà lách Ban công
+            </h3>
+            <p class="text-xs text-slate-400">Balcony 1F • NFT Vertical Tower</p>
           </div>
-          <span id="badge-kitchen" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-900/60 text-emerald-300 border border-emerald-800">OK</span>
+          <span id="badge-rack1" class="px-2.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-700">OPTIMAL</span>
         </div>
+        
         <div class="grid grid-cols-2 gap-3 mt-4">
-          <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-            <span class="text-[11px] text-slate-400 uppercase">Ngăn mát (Fridge)</span>
+          <!-- Flow Rate -->
+          <div class="bg-slate-950/70 p-3 rounded-lg border border-slate-800/80">
+            <span class="text-[11px] text-slate-400 uppercase font-medium">Lưu lượng bơm</span>
             <div class="flex items-baseline space-x-1 mt-1">
-              <span id="temp-kitchen-fridge" class="text-2xl font-bold font-mono text-emerald-400">4.2</span>
-              <span class="text-xs text-slate-400">°C</span>
+              <span id="val-flow" class="text-2xl font-bold font-mono text-cyan-400">4.5</span>
+              <span class="text-xs text-slate-400">LPM</span>
             </div>
-            <span id="door-kitchen-fridge" class="text-[10px] text-slate-500 mt-1 block">🚪 Cửa: Đóng</span>
+            <span id="status-flow" class="text-[10px] text-emerald-400 mt-1 block">Tuần hoàn tốt</span>
           </div>
-          <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-            <span class="text-[11px] text-slate-400 uppercase">Ngăn đông (Freezer)</span>
+
+          <!-- pH -->
+          <div class="bg-slate-950/70 p-3 rounded-lg border border-slate-800/80">
+            <span class="text-[11px] text-slate-400 uppercase font-medium">Độ pH dinh dưỡng</span>
             <div class="flex items-baseline space-x-1 mt-1">
-              <span id="temp-kitchen-freezer" class="text-2xl font-bold font-mono text-cyan-400">-18.4</span>
-              <span class="text-xs text-slate-400">°C</span>
+              <span id="val-ph" class="text-2xl font-bold font-mono text-emerald-400">6.1</span>
+              <span class="text-xs text-slate-400">pH</span>
             </div>
-            <span class="text-[10px] text-slate-500 mt-1 block">🚪 Cửa: Đóng</span>
+            <span id="status-ph" class="text-[10px] text-emerald-400 mt-1 block">Lý tưởng (5.8 - 6.5)</span>
           </div>
         </div>
-        <div class="mt-3 flex justify-between items-center text-xs text-slate-400 pt-2 border-t border-slate-800/80">
-          <span>Công suất máy nén:</span>
-          <span id="power-kitchen" class="font-mono text-slate-200 font-semibold">65 W</span>
+
+        <div class="mt-4 grid grid-cols-3 gap-2 text-center text-[11px] pt-3 border-t border-slate-800">
+          <div>
+            <span class="text-slate-400 block">EC (ppm)</span>
+            <span id="val-ec" class="font-mono font-bold text-slate-200">960</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block">Mực nước</span>
+            <span id="val-level" class="font-mono font-bold text-slate-200">88%</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block">Nhiệt độ nước</span>
+            <span id="val-temp" class="font-mono font-bold text-slate-200">21.4°C</span>
+          </div>
         </div>
       </div>
 
-      <!-- Fridge 2: Living Room -->
-      <div class="bg-slate-800/50 rounded-xl p-5 border border-slate-700 relative overflow-hidden">
+      <!-- Rack 2: Rooftop Strawberries -->
+      <div class="bg-slate-900/80 rounded-xl p-5 border border-slate-800 relative overflow-hidden shadow-lg">
         <div class="flex justify-between items-start mb-3">
           <div>
-            <span class="text-xs font-mono text-cyan-400">FRIDGE-LIVING-02</span>
-            <h3 class="font-bold text-slate-200">Tủ lạnh Phòng khách</h3>
-            <p class="text-xs text-slate-400">Living Room 1F • Compact 120L</p>
+            <span class="text-xs font-mono text-emerald-400">HYDROPONIC-RACK-02</span>
+            <h3 class="font-bold text-slate-100 flex items-center gap-1.5">
+              <span>🍓</span> Giàn Dâu tây Sân thượng
+            </h3>
+            <p class="text-xs text-slate-400">Rooftop 3F • Drip Hydroponics</p>
           </div>
-          <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-900/60 text-emerald-300 border border-emerald-800">OK</span>
+          <span class="px-2.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-700">OPTIMAL</span>
         </div>
         <div class="grid grid-cols-2 gap-3 mt-4">
-          <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-            <span class="text-[11px] text-slate-400 uppercase">Ngăn mát</span>
+          <div class="bg-slate-950/70 p-3 rounded-lg border border-slate-800/80">
+            <span class="text-[11px] text-slate-400 uppercase font-medium">Lưu lượng bơm</span>
             <div class="flex items-baseline space-x-1 mt-1">
-              <span id="temp-living-fridge" class="text-2xl font-bold font-mono text-emerald-400">3.8</span>
-              <span class="text-xs text-slate-400">°C</span>
+              <span class="text-2xl font-bold font-mono text-cyan-400">4.2</span>
+              <span class="text-xs text-slate-400">LPM</span>
             </div>
-            <span class="text-[10px] text-slate-500 mt-1 block">🚪 Cửa: Đóng</span>
+            <span class="text-[10px] text-emerald-400 mt-1 block">Tuần hoàn tốt</span>
           </div>
-          <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-            <span class="text-[11px] text-slate-400 uppercase">Ngăn đông</span>
+          <div class="bg-slate-950/70 p-3 rounded-lg border border-slate-800/80">
+            <span class="text-[11px] text-slate-400 uppercase font-medium">Độ pH</span>
             <div class="flex items-baseline space-x-1 mt-1">
-              <span id="temp-living-freezer" class="text-2xl font-bold font-mono text-cyan-400">-19.1</span>
-              <span class="text-xs text-slate-400">°C</span>
+              <span class="text-2xl font-bold font-mono text-emerald-400">5.9</span>
+              <span class="text-xs text-slate-400">pH</span>
             </div>
-            <span class="text-[10px] text-slate-500 mt-1 block">🚪 Cửa: Đóng</span>
+            <span class="text-[10px] text-emerald-400 mt-1 block">Lý tưởng</span>
           </div>
         </div>
-        <div class="mt-3 flex justify-between items-center text-xs text-slate-400 pt-2 border-t border-slate-800/80">
-          <span>Công suất máy nén:</span>
-          <span class="font-mono text-slate-200 font-semibold">52 W</span>
+        <div class="mt-4 grid grid-cols-3 gap-2 text-center text-[11px] pt-3 border-t border-slate-800">
+          <div><span class="text-slate-400 block">EC (ppm)</span><span class="font-mono font-bold text-slate-200">1120</span></div>
+          <div><span class="text-slate-400 block">Mực nước</span><span class="font-mono font-bold text-slate-200">92%</span></div>
+          <div><span class="text-slate-400 block">Nhiệt độ nước</span><span class="font-mono font-bold text-slate-200">20.8°C</span></div>
         </div>
       </div>
 
-      <!-- Fridge 3: Pantry -->
-      <div class="bg-slate-800/50 rounded-xl p-5 border border-slate-700 relative overflow-hidden">
+      <!-- Rack 3: Kitchen Microgreens -->
+      <div class="bg-slate-900/80 rounded-xl p-5 border border-slate-800 relative overflow-hidden shadow-lg">
         <div class="flex justify-between items-start mb-3">
           <div>
-            <span class="text-xs font-mono text-cyan-400">FRIDGE-PANTRY-03</span>
-            <h3 class="font-bold text-slate-200">Tủ đông Kho thực phẩm</h3>
-            <p class="text-xs text-slate-400">Pantry 2F • DeepFreezer 300L</p>
+            <span class="text-xs font-mono text-emerald-400">HYDROPONIC-RACK-03</span>
+            <h3 class="font-bold text-slate-100 flex items-center gap-1.5">
+              <span>🌿</span> Giàn Rau mầm Bếp
+            </h3>
+            <p class="text-xs text-slate-400">Indoor Kitchen • Aeroponics Rack</p>
           </div>
-          <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-900/60 text-emerald-300 border border-emerald-800">OK</span>
+          <span class="px-2.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-700">OPTIMAL</span>
         </div>
         <div class="grid grid-cols-2 gap-3 mt-4">
-          <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-            <span class="text-[11px] text-slate-400 uppercase">Ngăn mát</span>
+          <div class="bg-slate-950/70 p-3 rounded-lg border border-slate-800/80">
+            <span class="text-[11px] text-slate-400 uppercase font-medium">Lưu lượng bơm</span>
             <div class="flex items-baseline space-x-1 mt-1">
-              <span class="text-2xl font-bold font-mono text-emerald-400">4.5</span>
-              <span class="text-xs text-slate-400">°C</span>
+              <span class="text-2xl font-bold font-mono text-cyan-400">3.8</span>
+              <span class="text-xs text-slate-400">LPM</span>
             </div>
-            <span class="text-[10px] text-slate-500 mt-1 block">🚪 Cửa: Đóng</span>
+            <span class="text-[10px] text-emerald-400 mt-1 block">Tuần hoàn tốt</span>
           </div>
-          <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-            <span class="text-[11px] text-slate-400 uppercase">Ngăn đông</span>
+          <div class="bg-slate-950/70 p-3 rounded-lg border border-slate-800/80">
+            <span class="text-[11px] text-slate-400 uppercase font-medium">Độ pH</span>
             <div class="flex items-baseline space-x-1 mt-1">
-              <span class="text-2xl font-bold font-mono text-cyan-400">-20.0</span>
-              <span class="text-xs text-slate-400">°C</span>
+              <span class="text-2xl font-bold font-mono text-emerald-400">6.2</span>
+              <span class="text-xs text-slate-400">pH</span>
             </div>
-            <span class="text-[10px] text-slate-500 mt-1 block">🚪 Cửa: Đóng</span>
+            <span class="text-[10px] text-emerald-400 mt-1 block">Lý tưởng</span>
           </div>
         </div>
-        <div class="mt-3 flex justify-between items-center text-xs text-slate-400 pt-2 border-t border-slate-800/80">
-          <span>Công suất máy nén:</span>
-          <span class="font-mono text-slate-200 font-semibold">78 W</span>
+        <div class="mt-4 grid grid-cols-3 gap-2 text-center text-[11px] pt-3 border-t border-slate-800">
+          <div><span class="text-slate-400 block">EC (ppm)</span><span class="font-mono font-bold text-slate-200">850</span></div>
+          <div><span class="text-slate-400 block">Mực nước</span><span class="font-mono font-bold text-slate-200">80%</span></div>
+          <div><span class="text-slate-400 block">Nhiệt độ nước</span><span class="font-mono font-bold text-slate-200">22.1°C</span></div>
         </div>
       </div>
     </div>
 
     <!-- Chart & Logs Row -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div class="lg:col-span-2 bg-slate-800/50 rounded-xl p-5 border border-slate-700">
+      <div class="lg:col-span-2 bg-slate-900/80 rounded-xl p-5 border border-slate-800">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="font-semibold text-sm text-slate-200">📈 Real-time Temperature Telemetry (°C)</h3>
-          <span class="text-xs text-slate-400">Cập nhật mỗi 2 giây</span>
+          <h3 class="font-semibold text-sm text-slate-200 flex items-center gap-2">
+            <span>📈</span> Real-time Flow Rate (LPM) & Nutrient pH Telemetry
+          </h3>
+          <span class="text-xs text-emerald-400 font-mono">MongoDB Time Series Stream</span>
         </div>
         <div class="h-64">
-          <canvas id="tempChart"></canvas>
+          <canvas id="farmChart"></canvas>
         </div>
       </div>
 
-      <div class="bg-slate-800/50 rounded-xl p-5 border border-slate-700 flex flex-col">
-        <h3 class="font-semibold text-sm text-slate-200 mb-3">🔔 Operational Audit & Incident Log</h3>
+      <div class="bg-slate-900/80 rounded-xl p-5 border border-slate-800 flex flex-col">
+        <h3 class="font-semibold text-sm text-slate-200 mb-3 flex items-center gap-2">
+          <span>🔔</span> Farm Operations & Incident Audit Log
+        </h3>
         <div id="logStream" class="flex-1 overflow-y-auto space-y-2 font-mono text-xs max-h-64 pr-1">
-          <div class="p-2 bg-slate-900/60 rounded border border-slate-800 text-slate-400">
-            [SYS] Hệ thống giám sát vận hành đã khởi động. Đang nhận dữ liệu...
+          <div class="p-2 bg-slate-950 rounded border border-slate-800/80 text-slate-400">
+            [SYS] Gateway thu thập dữ liệu nông nghiệp đã kết nối MongoDB Atlas & Datadog.
           </div>
         </div>
       </div>
@@ -178,11 +207,11 @@
 
   <script>
     // Initialize Chart
-    const ctx = document.getElementById('tempChart').getContext('2d');
+    const ctx = document.getElementById('farmChart').getContext('2d');
     const maxDataPoints = 25;
     const labels = [];
-    const kitchenData = [];
-    const freezerData = [];
+    const flowData = [];
+    const phData = [];
 
     const chart = new Chart(ctx, {
       type: 'line',
@@ -190,17 +219,19 @@
         labels: labels,
         datasets: [
           {
-            label: 'Bếp - Ngăn mát (°C)',
-            borderColor: '#34d399',
-            backgroundColor: 'rgba(52, 211, 153, 0.1)',
-            data: kitchenData,
+            label: 'Lưu lượng bơm (LPM)',
+            borderColor: '#38bdf8', // Cyan
+            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+            data: flowData,
+            yAxisID: 'yFlow',
             tension: 0.3,
             fill: true
           },
           {
-            label: 'Bếp - Ngăn đông (°C)',
-            borderColor: '#38bdf8',
-            data: freezerData,
+            label: 'Độ pH dung dịch',
+            borderColor: '#34d399', // Emerald
+            data: phData,
+            yAxisID: 'yPh',
             tension: 0.3
           }
         ]
@@ -210,7 +241,24 @@
         maintainAspectRatio: false,
         scales: {
           x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-          y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+          yFlow: {
+            type: 'linear',
+            position: 'left',
+            min: 0,
+            max: 6,
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: { color: '#38bdf8' },
+            title: { display: true, text: 'Flow (LPM)', color: '#38bdf8' }
+          },
+          yPh: {
+            type: 'linear',
+            position: 'right',
+            min: 4,
+            max: 10,
+            grid: { drawOnChartArea: false },
+            ticks: { color: '#34d399' },
+            title: { display: true, text: 'pH Level', color: '#34d399' }
+          }
         },
         plugins: {
           legend: { labels: { color: '#cbd5e1', font: { size: 11 } } }
@@ -219,7 +267,9 @@
     });
 
     let isFaultActive = false;
-    let kitchenTemp = 4.2;
+    let currFlow = 4.5;
+    let currPh = 6.1;
+    let currLevel = 88;
 
     async function triggerIncident(isFault) {
       isFaultActive = isFault;
@@ -227,64 +277,75 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          device_id: 'FRIDGE-KITCHEN-01',
-          compartment: 'fridge',
-          action: isFault ? 'SIMULATE_DOOR_AJAR' : 'CLOSE_DOOR_AND_COOL',
-          notes: isFault ? 'Giả lập mở hé cửa' : 'Khắc phục tự động qua Dashboard'
+          device_id: 'HYDROPONIC-RACK-01',
+          action: isFault ? 'SIMULATE_PIPE_CLOG' : 'REVERSE_FLUSH_AND_PH_DOWN',
+          notes: isFault ? 'Giả lập nghẹt cặn rễ cây' : 'Kích hoạt xả ngược & bơm pH-Down'
         })
       });
       const data = await res.json();
-      addLog(isFault ? '🚨 [SỰ CỐ] Cửa tủ Bếp chính bị mở hé! Nhiệt độ đang tăng!' : '✅ [KHẮC PHỤC] Đã đóng cửa và bật làm lạnh khẩn cấp!');
+      addLog(isFault ? '🚨 [SỰ CỐ] Giàn xà lách bị nghẹt ống! Lưu lượng sụt giảm, pH kiềm hóa!' : '✅ [KHẮC PHỤC] Đã xả ngược đường ống và châm dung dịch cân bằng pH!');
     }
 
     function addLog(msg) {
       const stream = document.getElementById('logStream');
       const item = document.createElement('div');
-      item.className = `p-2 rounded border text-[11px] ${msg.includes('SỰ CỐ') ? 'bg-rose-950/60 border-rose-800 text-rose-300 pulse-danger' : 'bg-slate-900/60 border-slate-800 text-slate-300'}`;
+      item.className = `p-2 rounded border text-[11px] ${msg.includes('SỰ CỐ') ? 'bg-rose-950/70 border-rose-700 text-rose-200 pulse-danger' : 'bg-slate-950 border-slate-800 text-emerald-300'}`;
       item.innerHTML = `<span class="text-slate-500">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
       stream.insertBefore(item, stream.firstChild);
     }
 
-    // Live update simulation
+    // Telemetry tick
     setInterval(() => {
       const nowStr = new Date().toLocaleTimeString();
+
       if (isFaultActive) {
-        kitchenTemp = Math.min(22.0, kitchenTemp + 0.8);
+        currFlow = Math.max(0.2, currFlow - 0.7); // Lưu lượng tụt dốc
+        currPh = Math.min(8.4, currPh + 0.35);    // pH kiềm hóa nguy hiểm
+        currLevel = Math.max(15, currLevel - 8);  // Nước bồn cạn dần
       } else {
-        if (kitchenTemp > 4.2) kitchenTemp = Math.max(4.2, kitchenTemp - 0.6);
-        else kitchenTemp = 4.2 + (Math.random() * 0.4 - 0.2);
+        if (currFlow < 4.5) currFlow = Math.min(4.5, currFlow + 0.6);
+        else currFlow = 4.5 + (Math.random() * 0.3 - 0.15);
+
+        if (currPh > 6.1) currPh = Math.max(6.1, currPh - 0.3);
+        else currPh = 6.1 + (Math.random() * 0.15 - 0.08);
+
+        if (currLevel < 88) currLevel = Math.min(88, currLevel + 6);
       }
 
-      const tempVal = parseFloat(kitchenTemp.toFixed(1));
-      document.getElementById('temp-kitchen-fridge').innerText = tempVal;
-      
-      const card = document.getElementById('card-kitchen');
-      const badge = document.getElementById('badge-kitchen');
-      const door = document.getElementById('door-kitchen-fridge');
-      const power = document.getElementById('power-kitchen');
+      const flowVal = parseFloat(currFlow.toFixed(2));
+      const phVal = parseFloat(currPh.toFixed(2));
 
-      if (tempVal > 10.0) {
+      document.getElementById('val-flow').innerText = flowVal;
+      document.getElementById('val-ph').innerText = phVal;
+      document.getElementById('val-level').innerText = Math.round(currLevel) + '%';
+
+      const card = document.getElementById('card-rack1');
+      const badge = document.getElementById('badge-rack1');
+      const statusFlow = document.getElementById('status-flow');
+      const statusPh = document.getElementById('status-ph');
+
+      if (flowVal < 1.0 || phVal > 7.5) {
         card.classList.add('border-rose-500', 'bg-rose-950/20');
-        badge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-rose-900 text-rose-200 border border-rose-700 animate-pulse';
-        badge.innerText = 'ALERT: QUÁ NHIỆT';
-        door.innerHTML = '🚪 Cửa: <span class="text-rose-400 font-bold">MỞ HÉ</span>';
-        power.innerText = '175 W (Max)';
+        badge.className = 'px-2.5 py-0.5 rounded text-[11px] font-bold bg-rose-900 text-rose-200 border border-rose-600 animate-pulse';
+        badge.innerText = 'CRITICAL: TẮC ỐNG / KHÓA PH';
+        statusFlow.innerHTML = '<span class="text-rose-400 font-bold">⚠️ Nghẹt rễ nghiêm trọng</span>';
+        statusPh.innerHTML = '<span class="text-rose-400 font-bold">⚠️ pH kiềm hóa (> 7.5)</span>';
       } else {
         card.classList.remove('border-rose-500', 'bg-rose-950/20');
-        badge.className = 'px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-900/60 text-emerald-300 border border-emerald-800';
-        badge.innerText = 'OK';
-        door.innerHTML = '🚪 Cửa: Đóng';
-        power.innerText = '65 W';
+        badge.className = 'px-2.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-700';
+        badge.innerText = 'OPTIMAL';
+        statusFlow.innerText = 'Tuần hoàn tốt';
+        statusPh.innerText = 'Lý tưởng (5.8 - 6.5)';
       }
 
       labels.push(nowStr);
-      kitchenData.push(tempVal);
-      freezerData.push(-18.4 + (Math.random() * 0.3 - 0.15));
+      flowData.push(flowVal);
+      phData.push(phVal);
 
       if (labels.length > maxDataPoints) {
         labels.shift();
-        kitchenData.shift();
-        freezerData.shift();
+        flowData.shift();
+        phData.shift();
       }
       chart.update();
     }, 2000);

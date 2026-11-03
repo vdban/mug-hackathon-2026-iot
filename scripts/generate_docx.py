@@ -1,6 +1,6 @@
 """
-Script sinh file Word (.docx) chuẩn để tải lên Google Docs.
-Định dạng chuyên nghiệp: Tiêu đề lớn, Mục lục, Bảng biểu, Code block, Callout box.
+Script sinh file Word (.docx) chuẩn để tải lên Google Docs cho Smart Hydroponics Farm.
+Định dạng chuyên nghiệp: Tiêu đề lớn, Bảng biểu màu sắc, Danh sách kiểm tra Điều 7.2 Thể lệ.
 """
 
 import os
@@ -22,7 +22,6 @@ def set_cell_background(cell, fill_hex):
 def create_document():
     doc = Document()
 
-    # Cấu hình lề trang 2cm
     for section in doc.sections:
         section.top_margin = Inches(0.8)
         section.bottom_margin = Inches(0.8)
@@ -32,35 +31,35 @@ def create_document():
     # 1. TIÊU ĐỀ CHÍNH
     title_p = doc.add_paragraph()
     title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run_title = title_p.add_run("BÁO CÁO ĐẶC TẢ CHI TIẾT DỰ ÁN\nSMART FRIDGE REAL-TIME OPERATIONS")
+    run_title = title_p.add_run("BÁO CÁO ĐẶC TẢ CHI TIẾT DỰ ÁN\nSMART HYDROPONICS REAL-TIME OPERATIONS")
     run_title.font.name = "Arial"
     run_title.font.size = Pt(22)
     run_title.font.bold = True
-    run_title.font.color.rgb = RGBColor(0, 30, 43) # MongoDB Dark Navy
+    run_title.font.color.rgb = RGBColor(0, 104, 74) # Forest Green
 
     sub_p = doc.add_paragraph()
     sub_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run_sub = sub_p.add_run("Cuộc thi: MongoDB User Group Vietnam Hackathon 2026 (MongoDB × Datadog)\nChủ đề: Real-time Operations • Nền tảng: MongoDB Time Series & Datadog APM")
+    run_sub = sub_p.add_run("Cuộc thi: MongoDB User Group Vietnam Hackathon 2026 (MongoDB × Datadog)\nChủ đề: Real-time Operations • Lĩnh vực: Nông nghiệp Đô thị Thông minh (AgriTech & ESG)")
     run_sub.font.name = "Arial"
     run_sub.font.size = Pt(11)
     run_sub.font.italic = True
     run_sub.font.color.rgb = RGBColor(100, 116, 139)
 
-    doc.add_paragraph() # Spacing
+    doc.add_paragraph()
 
     # 2. PHẦN 1: MỤC ĐÍCH & BỐI CẢNH
     h1 = doc.add_heading("1. Mục đích Dự án & Bối cảnh Thực tế", level=1)
-    h1.runs[0].font.color.rgb = RGBColor(0, 104, 74) # MongoDB Forest Green
+    h1.runs[0].font.color.rgb = RGBColor(0, 104, 74)
 
     p = doc.add_paragraph(
-        "Trong đời sống gia đình hàng ngày, tủ lạnh là thiết bị tiêu thụ điện liên tục 24/7 và bảo quản toàn bộ nguồn lương thực tươi sống. "
-        "Tuy nhiên, hai sự cố vận hành thường xuyên xảy ra nhưng rất khó phát hiện kịp thời:"
+        "Mô hình trồng rau thủy canh hồi lưu (NFT / Vertical Farming) tại các đô thị đang phát triển mạnh mẽ nhằm cung cấp rau sạch tự cung tự cấp. "
+        "Tuy nhiên, hai rủi ro sinh hóa thường xuyên xảy ra nhưng rất khó phát hiện kịp thời:"
     )
     p.runs[0].font.size = Pt(10.5)
 
     bullets = [
-        ("Quên đóng khít cửa tủ lạnh (Door Ajar): ", "Do trẻ nhỏ lấy đồ hoặc gioăng cao su bị hở. Hơi lạnh thất thoát khiến ngăn mát vọt lên trên 15°C, thực phẩm bị ôi thiu bốc mùi, máy nén gồng hết công suất 180W gây lãng phí điện năng nghiêm trọng."),
-        ("Quá tải nhiệt máy nén (Compressor Overheat): ", "Bụi bẩn bám dàn nóng hoặc môi trường oi bức khiến động cơ chạy liên tục ở nhiệt độ cao, tiềm ẩn nguy cơ chập cháy điện gia đình.")
+        ("Tắc nghẽn rễ & cặn đường ống hồi lưu: ", "Rễ xà lách phát triển quá rậm rạp làm nghẹt ống dẫn dinh dưỡng. Lưu lượng tuần hoàn tụt dốc, nước trong bồn rễ cạn kiệt chỉ sau vài giờ."),
+        ("Kiềm hóa dung dịch & Khóa dinh dưỡng (Nutrient Lockout): ", "Nước ngừng tuần hoàn khiến nồng độ pH vọt lên trên 8.0, rễ cây bị cháy và không thể hấp thụ khoáng chất, dẫn đến mất trắng giàn rau tiền triệu.")
     ]
     for b_title, b_desc in bullets:
         bp = doc.add_paragraph(style='List Bullet')
@@ -69,10 +68,10 @@ def create_document():
         r2 = bp.add_run(b_desc)
 
     p_goal = doc.add_paragraph(
-        "Mục tiêu cốt lõi của dự án là xây dựng hệ thống IoT thông minh giúp: "
-        "(1) Tự động phát hiện lỗi trước khi người dùng kịp mở tủ, "
-        "(2) Điều tra chính xác nguyên nhân gốc rễ qua dữ liệu đa chiều, và "
-        "(3) Kích hoạt cơ chế tự khắc phục (Respond) để đưa nhiệt độ về mức an toàn."
+        "Mục tiêu cốt lõi của dự án là xây dựng hệ sinh thái IoT thông minh giúp: "
+        "(1) Tự động phát hiện nghẹt ống và kiềm hóa pH trước khi cây héo, "
+        "(2) Điều tra chính xác nguyên nhân qua dữ liệu đa chiều Datadog & MongoDB Window Functions, và "
+        "(3) Tự động kích hoạt van xả ngược áp lực cao và bơm pH-Down đưa hệ thống về trạng thái lý tưởng."
     )
     p_goal.runs[0].font.italic = True
 
@@ -81,17 +80,17 @@ def create_document():
     h2.runs[0].font.color.rgb = RGBColor(0, 104, 74)
 
     features = [
-        ("Thu thập Telemetry Chuỗi Thời gian (High-throughput Batch Ingestion)",
-         "Cảm biến tại các tủ lạnh định kỳ gửi gói dữ liệu mỗi 2 giây gồm: nhiệt độ ngăn đông/mát, độ ẩm, trạng thái cửa (mở/đóng), công suất máy nén (Watts). "
+        ("Thu thập Telemetry Thủy canh Tốc độ Cao (Batch Ingestion)",
+         "Cảm biến tại các giàn định kỳ gửi gói dữ liệu mỗi 2 giây gồm: độ pH, nồng độ EC (ppm), lưu lượng bơm (LPM), mực nước bồn chứa (%), nhiệt độ nước (°C). "
          "Backend tiếp nhận và ghi hàng loạt bằng lệnh insert_many(ordered=False) vào MongoDB Time Series."),
         ("Phát hiện Sự cố Tức thời (Real-time Anomaly Detection)",
-         "Hệ thống liên tục kiểm tra ngưỡng an toàn: Nếu ngăn mát > 10°C hoặc ngăn đông > -5°C, hệ thống tự động gắn cờ sự cố, bắn Log lỗi [INCIDENT_ALERT] và gửi Event khẩn cấp sang Datadog."),
-        ("Bảng điều khiển Vận hành Trực quan (Fleet Operations Dashboard)",
-         "Cung cấp 2 màn hình quan sát: (1) Datadog Dashboard đo lường độ trễ p95, throughput và error rate; (2) Web UI tích hợp tại localhost:8000 hiển thị thẻ trực quan 3 tủ lạnh và biểu đồ nhiệt độ real-time."),
+         "Hệ thống liên tục kiểm tra ngưỡng an toàn: Nếu lưu lượng bơm < 1.0 LPM hoặc pH > 7.6, hệ thống tự động gắn cờ sự cố, bắn Log lỗi [FARM_ALERT] và gửi Event khẩn cấp sang Datadog."),
+        ("Bảng điều khiển Vận hành Nông trại (Fleet Operations Dashboard)",
+         "Cung cấp 2 màn hình quan sát: (1) Datadog Dashboard đo lường độ trễ p95, throughput và phân bố pH; (2) Web UI tích hợp tại localhost:8000 hiển thị thẻ trực quan 3 giàn thủy canh và biểu đồ đa trục real-time."),
         ("Phân tích Xu hướng Bằng MongoDB Window Functions",
-         "Sử dụng toán tử $setWindowFields tính toán Moving Average (trung bình trượt) 5 mẫu gần nhất, giúp nhận biết nhiệt độ đang có xu hướng tăng dốc trước khi chạm ngưỡng nguy hiểm."),
+         "Sử dụng toán tử $setWindowFields tính toán Moving Average (trung bình trượt) 5 mẫu gần nhất của lưu lượng nước và độ pH, giúp bắt sớm xu hướng nghẹt rễ cây."),
         ("Cơ chế Phản ứng & Khắc phục Sự cố (Incident Mitigation API)",
-         "Endpoint /api/incident/respond cho phép kích hoạt chốt đóng cửa tự động và chế độ làm lạnh tăng cường, đồng thời lưu nhật ký khắc phục vào MongoDB collection 'incidents' và gửi tín hiệu phục hồi lên Datadog.")
+         "Endpoint /api/incident/respond cho phép kích hoạt chu trình xả ngược áp lực cao (Reverse Pulse Flush) và châm pH-Down, lưu nhật ký khắc phục vào MongoDB collection 'incidents' và phục hồi trạng thái trên Datadog.")
     ]
     for ft_title, ft_desc in features:
         fp = doc.add_paragraph(style='List Bullet')
@@ -103,7 +102,6 @@ def create_document():
     h3 = doc.add_heading("3. Kiến trúc Kỹ thuật & Triển khai", level=1)
     h3.runs[0].font.color.rgb = RGBColor(0, 104, 74)
 
-    # Bảng phân công công nghệ
     table = doc.add_table(rows=1, cols=3)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     hdr_cells = table.rows[0].cells
@@ -118,10 +116,10 @@ def create_document():
                 r.font.color.rgb = RGBColor(255, 255, 255)
 
     tech_stack = [
-        ("Operational Database", "MongoDB Atlas (Free M0)", "Time Series Collection (granularity: seconds), TTL Index 7 ngày (expireAfterSeconds: 604800), Aggregation Pipeline ($match, $dateTrunc, $setWindowFields)."),
-        ("Observability Platform", "Datadog Cloud", "Dashboard thời gian thực, Log Management Injection (trace_id), APM Distributed Tracing, Alert Monitors."),
+        ("Operational Database", "MongoDB Atlas (Free M0)", "Time Series Collection 'hydroponic_telemetry' (granularity: seconds), TTL Index 7 ngày (expireAfterSeconds: 604800), Aggregation Pipeline ($match, $dateTrunc, $setWindowFields)."),
+        ("Observability Platform", "Datadog Cloud", "Dashboard thời gian thực (LPM, pH, EC), Log Management Injection (trace_id), APM Distributed Tracing, Alert Monitors."),
         ("Backend Ingestion API", "Python 3.12, FastAPI, ddtrace", "Xử lý batch bất đồng bộ, middleware CORS, tích hợp Datadog REST API v1/v2."),
-        ("IoT Edge Simulation", "Python Requests Simulator", "Mô phỏng dữ liệu ngẫu nhiên của 3 tủ lạnh, hỗ trợ cờ --fault và --resolve phục vụ demo.")
+        ("AgriTech Edge Simulation", "Python Requests Simulator", "Mô phỏng dữ liệu ngẫu nhiên của 3 giàn thủy canh, hỗ trợ cờ --fault và --resolve phục vụ demo.")
     ]
     for comp, tech, role in tech_stack:
         row_cells = table.add_row().cells
@@ -142,13 +140,13 @@ def create_document():
         ("Bước 2: Cài đặt thư viện Python",
          "Chạy: pip install -r backend/requirements.txt để cài FastAPI, PyMongo, Pydantic, ddtrace, requests."),
         ("Bước 3: Khởi tạo Cụm MongoDB Time Series",
-         "Chạy lệnh: python scripts/setup_mongo.py để tự động tạo collection fridge_telemetry, thiết lập TTL 7 ngày và khởi tạo dữ liệu mẫu."),
+         "Chạy lệnh: python scripts/setup_mongo.py để tự động tạo collection hydroponic_telemetry, thiết lập TTL 7 ngày và khởi tạo dữ liệu mẫu."),
         ("Bước 4: Kiểm tra kết nối Datadog",
          "Chạy lệnh: python scripts/test_datadog.py để bắn 1 metric và 1 event thử nghiệm lên Event Stream của Datadog."),
         ("Bước 5: Khởi động Backend & Simulator",
          "Khởi động API: cd backend && uvicorn app.main:app --reload\nKhởi động Simulator: python simulator/sensor_simulator.py"),
         ("Bước 6: Trình diễn Kịch bản Sự cố (Detect -> Investigate -> Respond)",
-         "Gây lỗi: python scripts/trigger_incident.py --fault (Nhiệt độ vọt lên 18°C, Datadog nổ Alert đỏ)\nKhắc phục: python scripts/trigger_incident.py --resolve (Đóng cửa, nhiệt độ hạ về 4°C, Datadog chuyển xanh).")
+         "Gây lỗi: python scripts/trigger_incident.py --fault (Lưu lượng tụt về 0.3 LPM, pH vọt 8.2, Datadog nổ Alert đỏ)\nKhắc phục: python scripts/trigger_incident.py --resolve (Xả ngược, lưu lượng phục hồi 4.5 LPM, pH về 6.1, Datadog chuyển xanh).")
     ]
     for s_title, s_desc in steps:
         p_step = doc.add_paragraph()
@@ -192,11 +190,11 @@ def create_document():
         row[1].text = loc
         row[2].text = stat
         if stat == "Đã hoàn thành":
-            set_cell_background(row[2], "DCFCE7") # Light Green
+            set_cell_background(row[2], "DCFCE7")
 
-    output_path = "F:/Project nghịch linh tinh/mug-hackathon-2026-iot/docs/Smart_Fridge_Realtime_Operations_Full_Spec.docx"
+    output_path = "F:/Project nghịch linh tinh/mug-hackathon-2026-iot/docs/Smart_Hydroponics_Realtime_Operations_Full_Spec.docx"
     doc.save(output_path)
-    print("Document created successfully at docs/Smart_Fridge_Realtime_Operations_Full_Spec.docx")
+    print("Document created successfully at docs/Smart_Hydroponics_Realtime_Operations_Full_Spec.docx")
 
 if __name__ == "__main__":
     create_document()

@@ -21,11 +21,11 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] [%(name)s] %(message)s'
 )
-logger = logging.getLogger("smart_fridge_api")
+logger = logging.getLogger("smart_hydroponics_api")
 
 app = FastAPI(
-    title="Smart Fridge IoT Real-time Operations API",
-    description="Backend API kết hợp MongoDB Time Series và Datadog Observability cho Hackathon 2026",
+    title="Smart Hydroponics Farm Real-time Operations API",
+    description="Backend API kết hợp MongoDB Time Series và Datadog Observability cho Nông nghiệp Đô thị Thông minh",
     version="1.0.0"
 )
 
@@ -37,14 +37,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-COLLECTION_NAME = "fridge_telemetry"
+COLLECTION_NAME = "hydroponic_telemetry"
 
 @app.get("/", response_class=FileResponse)
 def serve_dashboard():
     static_file = os.path.join(os.path.dirname(__file__), "static", "index.html")
     if os.path.exists(static_file):
         return FileResponse(static_file)
-    return {"message": "Smart Fridge IoT API running. Visit /docs for Swagger."}
+    return {"message": "Smart Hydroponics Farm API running. Visit /docs for Swagger."}
 
 @app.get("/health")
 def health_check():
@@ -54,17 +54,17 @@ def health_check():
         "status": "healthy" if db_status["status"] == "connected" else "degraded",
         "database": db_status,
         "datadog_connected": dd_ready,
-        "service": os.getenv("DD_SERVICE", "smart-fridge-service"),
+        "service": os.getenv("DD_SERVICE", "smart-hydroponics-service"),
         "timestamp": datetime.now(timezone.utc)
     }
 
 @app.post("/api/telemetry/ingest", status_code=status.HTTP_201_CREATED)
 def ingest_telemetry(batch: TelemetryBatch):
     """
-    Ingest batch dữ liệu cảm biến:
+    Ingest batch dữ liệu cảm biến thủy canh:
     1. Ghi vào MongoDB Time Series Collection (insertMany ordered=False)
     2. Đẩy chỉ số thời gian thực lên Datadog Metrics API
-    3. Tự động kiểm tra cảnh báo và bắn Event/Log lên Datadog
+    3. Tự động kiểm tra cảnh báo nghẹt ống / kiềm hóa dung dịch và bắn Event/Log lên Datadog
     """
     if not batch.readings:
         raise HTTPException(status_code=400, detail="Batch rỗng")
@@ -83,26 +83,30 @@ def ingest_telemetry(batch: TelemetryBatch):
         inserted_count = bwe.details.get("nInserted", 0)
         logger.warning(f"BulkWriteWarning: Chỉ ghi thành công {inserted_count}/{len(docs)} bản ghi")
 
-    # 2. Đẩy Metrics trực tiếp lên Datadog (smartfridge.temperature, power, door_open)
+    # 2. Đẩy Metrics trực tiếp lên Datadog
     send_metrics_to_datadog(docs)
 
-    # 3. Kiểm tra ngưỡng nguy hiểm để bắn Alert & Log lên Datadog
+    # 3. Kiểm tra ngưỡng nguy hiểm: Lưu lượng bơm < 1.0 LPM (tắc ống) hoặc pH > 7.5 (khóa hấp thụ dinh dưỡng)
     for r in batch.readings:
-        if (r.sensor.compartment == "fridge" and r.temperature > 10.0) or \
-           (r.sensor.compartment == "freezer" and r.temperature > -5.0):
+        is_clogged = r.pump_flow_lpm < 1.0
+        is_ph_drift = r.ph > 7.6 or r.ph < 5.0
+
+        if is_clogged or is_ph_drift:
+            alert_type = "TẮC NGHẼN ỐNG HỒI LƯU" if is_clogged else "KIỀM HÓA DUNG DỊCH (KHÓA DINH DƯỠNG)"
             alert_msg = (
-                f"[INCIDENT_ALERT] Thiết bị {r.sensor.id} ({r.sensor.compartment}) "
-                f"quá nhiệt nguy hiểm: {r.temperature}°C, Door Open={r.door_open}, Power={r.power_watts}W"
+                f"[FARM_ALERT] Giàn {r.sensor.id} ({r.sensor.crop} - {r.sensor.zone}): {alert_type}! "
+                f"Lưu lượng={r.pump_flow_lpm} LPM, pH={r.ph}, Mực nước={r.water_level_pct}%, EC={r.ec_ppm} ppm"
             )
             logger.error(alert_msg)
+
             # Bắn Log và Event trực tiếp sang Datadog
             send_log_to_datadog(
                 alert_msg,
                 status="error",
-                extra_tags=[f"device:{r.sensor.id}", f"compartment:{r.sensor.compartment}"]
+                extra_tags=[f"rack_id:{r.sensor.id}", f"crop:{r.sensor.crop}"]
             )
             send_incident_event(
-                title=f"Quá nhiệt tại {r.sensor.id} ({r.sensor.compartment})",
+                title=f"Cảnh báo: {r.sensor.id} ({alert_type})",
                 text=alert_msg,
                 alert_type="error"
             )
@@ -115,31 +119,30 @@ def ingest_telemetry(batch: TelemetryBatch):
     }
 
 @app.get("/api/analytics/hourly")
-def get_hourly_analytics(device_id: str = None, hours: int = 24):
+def get_hourly_analytics(rack_id: str = None, hours: int = 24):
     """
-    Chạy Aggregation Pipeline tính toán chỉ số trung bình theo từng giờ (Slide 18)
+    Chạy Aggregation Pipeline tính toán chỉ số trung bình theo từng giờ của các giàn
     """
     db = get_database()
-    pipeline = get_hourly_summary_pipeline(device_id=device_id, hours=hours)
+    pipeline = get_hourly_summary_pipeline(rack_id=rack_id, hours=hours)
     results = list(db[COLLECTION_NAME].aggregate(pipeline))
     return {
         "query_hours": hours,
-        "device_id": device_id,
+        "rack_id": rack_id,
         "count": len(results),
         "data": results
     }
 
 @app.get("/api/analytics/trend")
-def get_trend_analytics(device_id: str, compartment: str = "fridge", minutes: int = 30):
+def get_trend_analytics(rack_id: str = "HYDROPONIC-RACK-01", minutes: int = 30):
     """
-    Chạy Window Functions ($setWindowFields) tính moving average 5 mẫu gần nhất (Slide 19)
+    Chạy Window Functions ($setWindowFields) tính moving average lưu lượng và pH 5 mẫu gần nhất
     """
     db = get_database()
-    pipeline = get_trend_and_anomalies_pipeline(device_id=device_id, compartment=compartment, minutes=minutes)
+    pipeline = get_trend_and_anomalies_pipeline(rack_id=rack_id, minutes=minutes)
     results = list(db[COLLECTION_NAME].aggregate(pipeline))
     return {
-        "device_id": device_id,
-        "compartment": compartment,
+        "rack_id": rack_id,
         "window_minutes": minutes,
         "data": results
     }
@@ -148,12 +151,11 @@ def get_trend_analytics(device_id: str, compartment: str = "fridge", minutes: in
 def respond_incident(req: IncidentActionRequest):
     """
     Endpoint phản ứng khắc phục sự cố (Respond - Bước 3 trong đề bài).
-    Hành động: Tự động đóng cửa / Kích hoạt làm lạnh nhanh khẩn cấp / Tắt còi báo.
+    Hành động: Tự động xả ngược đường ống (REVERSE_FLUSH) / Bơm cân bằng pH (DOSING_PH_DOWN).
     """
     db = get_database()
     incident_record = {
         "device_id": req.device_id,
-        "compartment": req.compartment,
         "action": req.action,
         "notes": req.notes,
         "resolved_at": datetime.now(timezone.utc),
@@ -162,15 +164,15 @@ def respond_incident(req: IncidentActionRequest):
     db.incidents.insert_one(incident_record)
     
     resolve_msg = (
-        f"[INCIDENT_RESOLVED] Đã thực thi khắc phục cho thiết bị {req.device_id} "
-        f"({req.compartment}) với hành động: {req.action}"
+        f"[INCIDENT_RESOLVED] Đã thực thi hành động khắc phục cho {req.device_id}: {req.action}. "
+        f"Lưu lượng bơm và độ pH đang phục hồi về vùng lý tưởng."
     )
     logger.info(resolve_msg)
 
     # Gửi tín hiệu giải quyết sự cố lên Datadog
-    send_log_to_datadog(resolve_msg, status="info", extra_tags=[f"device:{req.device_id}"])
+    send_log_to_datadog(resolve_msg, status="info", extra_tags=[f"rack_id:{req.device_id}"])
     send_incident_event(
-        title=f"Đã khắc phục: {req.device_id}",
+        title=f"Đã xử lý sự cố: {req.device_id}",
         text=resolve_msg,
         alert_type="success"
     )
@@ -179,7 +181,7 @@ def respond_incident(req: IncidentActionRequest):
         "status": "remediated",
         "action_taken": req.action,
         "device_id": req.device_id,
-        "message": f"Sự cố đã được giải quyết: {req.action}. Hệ thống đang trở về nhiệt độ chuẩn."
+        "message": f"Sự cố đã được khắc phục: {req.action}. Hệ sinh thái thủy canh đang trở lại bình thường."
     }
 
 @app.get("/api/incidents")

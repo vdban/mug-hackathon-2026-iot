@@ -1,5 +1,5 @@
 """
-Automated Integration Tests for Smart Fridge IoT API.
+Automated Integration Tests for Smart Hydroponics Farm API.
 Kiểm tra tính đúng đắn của các endpoint mà không cần bắt buộc có live DB.
 """
 
@@ -30,16 +30,15 @@ def test_incident_respond_endpoint():
     with patch("app.main.get_database") as mock_db:
         mock_db.return_value.incidents.insert_one = MagicMock()
         payload = {
-            "device_id": "FRIDGE-KITCHEN-01",
-            "compartment": "fridge",
-            "action": "CLOSE_DOOR_TEST",
+            "device_id": "HYDROPONIC-RACK-01",
+            "action": "REVERSE_FLUSH_TEST",
             "notes": "Automated pytest run"
         }
         response = client.post("/api/incident/respond", json=payload)
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "remediated"
-        assert data["action_taken"] == "CLOSE_DOOR_TEST"
+        assert data["action_taken"] == "REVERSE_FLUSH_TEST"
 
 def test_telemetry_ingest_endpoint():
     with patch("app.main.get_database") as mock_db:
@@ -50,16 +49,18 @@ def test_telemetry_ingest_endpoint():
         payload = {
             "readings": [
                 {
-                    "ts": "2026-11-03T10:00:00Z",
+                    "ts": "2026-11-04T10:00:00Z",
                     "sensor": {
-                        "id": "FRIDGE-KITCHEN-01",
-                        "compartment": "fridge",
-                        "model": "Inverter Pro 550L"
+                        "id": "HYDROPONIC-RACK-01",
+                        "zone": "Balcony 1F",
+                        "crop": "Lettuce",
+                        "system_type": "NFT-Vertical"
                     },
-                    "temperature": 4.5,
-                    "humidity": 65.0,
-                    "door_open": False,
-                    "power_watts": 60.0
+                    "ph": 6.1,
+                    "ec_ppm": 950.0,
+                    "water_temp": 21.5,
+                    "water_level_pct": 88.0,
+                    "pump_flow_lpm": 4.5
                 }
             ]
         }
@@ -68,3 +69,15 @@ def test_telemetry_ingest_endpoint():
         data = response.json()
         assert data["status"] == "success"
         assert data["inserted_mongo"] == 2
+
+if __name__ == "__main__":
+    print("Running integration tests...")
+    test_health_endpoint()
+    print("✅ test_health_endpoint passed")
+    test_dashboard_endpoint()
+    print("✅ test_dashboard_endpoint passed")
+    test_incident_respond_endpoint()
+    print("✅ test_incident_respond_endpoint passed")
+    test_telemetry_ingest_endpoint()
+    print("✅ test_telemetry_ingest_endpoint passed")
+    print("\n🎉 ALL TESTS PASSED SUCCESSFULLY!")

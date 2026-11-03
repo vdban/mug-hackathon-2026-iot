@@ -1,17 +1,17 @@
 """
-MongoDB Aggregation Pipelines for Real-time Analytics & Anomaly Detection.
+MongoDB Aggregation Pipelines for Smart Hydroponics Analytics & Anomaly Detection.
 Tuân thủ toàn bộ kỹ thuật trong Workshop của MongoDB (Slides 16-20):
 - Bắt đầu với $match trên metaField và timeField để skip buckets.
 - Sử dụng $dateTrunc với timezone 'Asia/Ho_Chi_Minh'.
-- Sử dụng $setWindowFields tính moving average (trung bình trượt).
+- Sử dụng $setWindowFields tính moving average (trung bình trượt) lưu lượng bơm và độ pH.
 """
 
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any, List
 
-def get_hourly_summary_pipeline(device_id: Optional[str] = None, hours: int = 24) -> List[Dict[str, Any]]:
+def get_hourly_summary_pipeline(rack_id: Optional[str] = None, hours: int = 24) -> List[Dict[str, Any]]:
     """
-    Aggregation Pipeline tính nhiệt độ trung bình, min, max theo từng giờ.
+    Aggregation Pipeline tính chỉ số trung bình theo từng giờ của các giàn thủy canh.
     (Slide 18 trong workshop)
     """
     start_time = datetime.now(timezone.utc) - timedelta(hours=hours)
@@ -19,8 +19,8 @@ def get_hourly_summary_pipeline(device_id: Optional[str] = None, hours: int = 24
     match_stage: Dict[str, Any] = {
         "ts": {"$gte": start_time}
     }
-    if device_id:
-        match_stage["sensor.id"] = device_id
+    if rack_id:
+        match_stage["sensor.id"] = rack_id
 
     pipeline = [
         # 1. $match stage đầu tiên để tận dụng index và skip bucket (Slide 16)
@@ -30,8 +30,9 @@ def get_hourly_summary_pipeline(device_id: Optional[str] = None, hours: int = 24
         {
             "$group": {
                 "_id": {
-                    "device": "$sensor.id",
-                    "compartment": "$sensor.compartment",
+                    "rack": "$sensor.id",
+                    "crop": "$sensor.crop",
+                    "zone": "$sensor.zone",
                     "hour": {
                         "$dateTrunc": {
                             "date": "$ts",
@@ -40,13 +41,12 @@ def get_hourly_summary_pipeline(device_id: Optional[str] = None, hours: int = 24
                         }
                     }
                 },
-                "avgTemp": {"$avg": "$temperature"},
-                "minTemp": {"$min": "$temperature"},
-                "maxTemp": {"$max": "$temperature"},
-                "avgPower": {"$avg": "$power_watts"},
-                "doorOpenSamples": {
-                    "$sum": {"$cond": ["$door_open", 1, 0]}
-                },
+                "avgPh": {"$avg": "$ph"},
+                "minPh": {"$min": "$ph"},
+                "maxPh": {"$max": "$ph"},
+                "avgEc": {"$avg": "$ec_ppm"},
+                "avgFlow": {"$avg": "$pump_flow_lpm"},
+                "avgWaterLevel": {"$avg": "$water_level_pct"},
                 "totalSamples": {"$count": {}}
             }
         },
@@ -54,23 +54,20 @@ def get_hourly_summary_pipeline(device_id: Optional[str] = None, hours: int = 24
         # 3. $sort sắp xếp thời gian tăng dần
         {"$sort": {"_id.hour": 1}},
 
-        # 4. $project định dạng lại kết quả sạch đẹp
+        # 4. $project định dạng lại kết quả
         {
             "$project": {
                 "_id": 0,
-                "device": "$_id.device",
-                "compartment": "$_id.compartment",
+                "rack": "$_id.rack",
+                "crop": "$_id.crop",
+                "zone": "$_id.zone",
                 "hour": "$_id.hour",
-                "avgTemperature": {"$round": ["$avgTemp", 1]},
-                "minTemperature": {"$round": ["$minTemp", 1]},
-                "maxTemperature": {"$round": ["$maxTemp", 1]},
-                "avgPowerWatts": {"$round": ["$avgPower", 1]},
-                "doorOpenRatePercent": {
-                    "$round": [
-                        {"$multiply": [{"$divide": ["$doorOpenSamples", "$totalSamples"]}, 100]},
-                        1
-                    ]
-                },
+                "avgPh": {"$round": ["$avgPh", 2]},
+                "minPh": {"$round": ["$minPh", 2]},
+                "maxPh": {"$round": ["$maxPh", 2]},
+                "avgEcPpm": {"$round": ["$avgEc", 0]},
+                "avgFlowLpm": {"$round": ["$avgFlow", 2]},
+                "avgWaterLevelPct": {"$round": ["$avgWaterLevel", 1]},
                 "totalReadings": "$totalSamples"
             }
         }
@@ -78,18 +75,17 @@ def get_hourly_summary_pipeline(device_id: Optional[str] = None, hours: int = 24
     return pipeline
 
 
-def get_trend_and_anomalies_pipeline(device_id: str, compartment: str = "fridge", minutes: int = 30) -> List[Dict[str, Any]]:
+def get_trend_and_anomalies_pipeline(rack_id: str, minutes: int = 30) -> List[Dict[str, Any]]:
     """
-    Sử dụng $setWindowFields (Slide 19) để tính Moving Average của nhiệt độ trong 5 mẫu gần nhất
-    nhằm phát hiện sớm xu hướng tăng nhiệt đột biến trước khi chạm ngưỡng báo động.
+    Sử dụng $setWindowFields (Slide 19) để tính Moving Average của Lưu lượng Bơm (LPM) và pH
+    trong 5 mẫu gần nhất nhằm bắt sớm hiện tượng tắc nghẽn ống hồi lưu và kiềm hóa dung dịch.
     """
     start_time = datetime.now(timezone.utc) - timedelta(minutes=minutes)
 
     pipeline = [
         {
             "$match": {
-                "sensor.id": device_id,
-                "sensor.compartment": compartment,
+                "sensor.id": rack_id,
                 "ts": {"$gte": start_time}
             }
         },
@@ -98,10 +94,16 @@ def get_trend_and_anomalies_pipeline(device_id: str, compartment: str = "fridge"
             "$setWindowFields": {
                 "sortBy": {"ts": 1},
                 "output": {
-                    "movingAvgTemp": {
-                        "$avg": "$temperature",
+                    "movingAvgFlow": {
+                        "$avg": "$pump_flow_lpm",
                         "window": {
-                            "documents": [-4, 0]  # Trung bình trượt của 5 điểm dữ liệu liên tiếp
+                            "documents": [-4, 0]  # Trung bình trượt 5 mẫu
+                        }
+                    },
+                    "movingAvgPh": {
+                        "$avg": "$ph",
+                        "window": {
+                            "documents": [-4, 0]
                         }
                     }
                 }
@@ -111,10 +113,12 @@ def get_trend_and_anomalies_pipeline(device_id: str, compartment: str = "fridge"
             "$project": {
                 "_id": 0,
                 "ts": 1,
-                "temperature": 1,
-                "movingAvgTemp": {"$round": ["$movingAvgTemp", 2]},
-                "door_open": 1,
-                "power_watts": 1
+                "ph": 1,
+                "movingAvgPh": {"$round": ["$movingAvgPh", 2]},
+                "pump_flow_lpm": 1,
+                "movingAvgFlowLpm": {"$round": ["$movingAvgFlow", 2]},
+                "water_level_pct": 1,
+                "ec_ppm": 1
             }
         }
     ]

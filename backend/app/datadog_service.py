@@ -1,7 +1,6 @@
 """
-Datadog Direct Integration Service (Agentless & Dual-Mode).
-Gửi trực tiếp Metrics, Logs và Events lên Datadog Cloud qua HTTP API,
-giúp Dashboard và Monitor trên Datadog hiển thị dữ liệu ngay lập tức mà không bắt buộc phải cài đặt Datadog Agent dưới máy.
+Datadog Direct Integration Service for Smart Hydroponics Farm.
+Gửi trực tiếp Metrics, Logs và Events lên Datadog Cloud qua HTTP API.
 """
 
 import os
@@ -15,19 +14,18 @@ logger = logging.getLogger("datadog_service")
 DD_API_KEY = os.getenv("DD_API_KEY", "")
 DD_SITE = os.getenv("DD_SITE", "datadoghq.com")
 DD_ENV = os.getenv("DD_ENV", "hackathon")
-DD_SERVICE = os.getenv("DD_SERVICE", "smart-fridge-service")
+DD_SERVICE = os.getenv("DD_SERVICE", "smart-hydroponics-service")
 
 def is_datadog_configured() -> bool:
     return bool(DD_API_KEY and "your_datadog" not in DD_API_KEY)
 
 def send_metrics_to_datadog(points: List[Dict[str, Any]]):
     """
-    Gửi chỉ số cảm biến (nhiệt độ, công suất, trạng thái cửa) lên Datadog Metrics API v1.
+    Gửi chỉ số cảm biến nông nghiệp (pH, EC, Nhiệt độ nước, Mực nước, Lưu lượng bơm) lên Datadog.
     """
     if not is_datadog_configured():
         return
 
-    # URL theo region (US1, US5, EU, ...)
     url = f"https://api.{DD_SITE}/api/v1/series"
     headers = {
         "DD-API-KEY": DD_API_KEY,
@@ -38,35 +36,49 @@ def send_metrics_to_datadog(points: List[Dict[str, Any]]):
     series = []
 
     for p in points:
-        device_id = p["sensor"]["id"]
-        comp = p["sensor"]["compartment"]
+        rack_id = p["sensor"]["id"]
+        crop = p["sensor"]["crop"]
+        zone = p["sensor"]["zone"]
         tags = [
-            f"device:{device_id}",
-            f"compartment:{comp}",
+            f"rack_id:{rack_id}",
+            f"crop:{crop}",
+            f"zone:{zone}",
             f"env:{DD_ENV}",
             f"service:{DD_SERVICE}"
         ]
 
-        # Metric 1: Nhiệt độ
+        # 1. pH
         series.append({
-            "metric": "smartfridge.temperature",
-            "points": [[now_ts, float(p["temperature"])]],
+            "metric": "smartfarm.ph",
+            "points": [[now_ts, float(p["ph"])]],
             "type": "gauge",
             "tags": tags
         })
-
-        # Metric 2: Công suất máy nén (Watts)
+        # 2. EC (ppm)
         series.append({
-            "metric": "smartfridge.power_watts",
-            "points": [[now_ts, float(p["power_watts"])]],
+            "metric": "smartfarm.ec_ppm",
+            "points": [[now_ts, float(p["ec_ppm"])]],
             "type": "gauge",
             "tags": tags
         })
-
-        # Metric 3: Trạng thái cửa mở (1 = mở, 0 = đóng)
+        # 3. Water Temp (°C)
         series.append({
-            "metric": "smartfridge.door_open",
-            "points": [[now_ts, 1.0 if p.get("door_open") else 0.0]],
+            "metric": "smartfarm.water_temp",
+            "points": [[now_ts, float(p["water_temp"])]],
+            "type": "gauge",
+            "tags": tags
+        })
+        # 4. Water Level (%)
+        series.append({
+            "metric": "smartfarm.water_level_pct",
+            "points": [[now_ts, float(p["water_level_pct"])]],
+            "type": "gauge",
+            "tags": tags
+        })
+        # 5. Pump Flow (LPM)
+        series.append({
+            "metric": "smartfarm.pump_flow_lpm",
+            "points": [[now_ts, float(p["pump_flow_lpm"])]],
             "type": "gauge",
             "tags": tags
         })
@@ -80,7 +92,7 @@ def send_metrics_to_datadog(points: List[Dict[str, Any]]):
 
 def send_log_to_datadog(message: str, status: str = "info", extra_tags: List[str] = None):
     """
-    Gửi log sự kiện / cảnh báo trực tiếp lên Datadog Log Management API.
+    Gửi log cảnh báo trực tiếp lên Datadog Log Management.
     """
     if not is_datadog_configured():
         return
@@ -98,7 +110,7 @@ def send_log_to_datadog(message: str, status: str = "info", extra_tags: List[str
     payload = [{
         "ddsource": "python",
         "ddtags": ",".join(tags),
-        "hostname": "iot-edge-server",
+        "hostname": "iot-agritech-gateway",
         "service": DD_SERVICE,
         "status": status,
         "message": message
@@ -111,7 +123,7 @@ def send_log_to_datadog(message: str, status: str = "info", extra_tags: List[str
 
 def send_incident_event(title: str, text: str, alert_type: str = "warning"):
     """
-    Gửi Event vào Datadog Event Stream (hiển thị trên Dashboard / Monitor).
+    Gửi Event vào Datadog Event Stream.
     """
     if not is_datadog_configured():
         return
@@ -125,7 +137,7 @@ def send_incident_event(title: str, text: str, alert_type: str = "warning"):
     payload = {
         "title": title,
         "text": text,
-        "alert_type": alert_type,  # 'error', 'warning', 'info', 'success'
+        "alert_type": alert_type,
         "tags": [f"env:{DD_ENV}", f"service:{DD_SERVICE}"]
     }
 

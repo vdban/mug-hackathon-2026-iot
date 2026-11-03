@@ -1,5 +1,5 @@
 """
-Script kiểm tra kết nối với Datadog API.
+Script kiểm tra kết nối với Datadog API cho Smart Hydroponics Farm.
 Gửi 1 metric và 1 event thử nghiệm để xác nhận Datadog API Key hoạt động chính xác.
 """
 
@@ -25,10 +25,10 @@ now = int(time.time())
 metric_payload = {
     "series": [
         {
-            "metric": "smartfridge.test_ping",
+            "metric": "smartfarm.test_ping",
             "points": [[now, 100]],
             "type": "gauge",
-            "tags": ["env:hackathon", "test:connection_check"]
+            "tags": ["env:hackathon", "project:smart_hydroponics"]
         }
     ]
 }
@@ -42,8 +42,8 @@ else:
 # 2. Gửi Event thử nghiệm
 event_url = f"https://api.{DD_SITE}/api/v1/events"
 event_payload = {
-    "title": "🎉 Smart Fridge Datadog Connection Verified",
-    "text": "Kết nối giữa ứng dụng Smart Fridge IoT và Datadog đã thiết lập thành công!",
+    "title": "🌱 Smart Hydroponics Farm Datadog Connected",
+    "text": "Hệ thống giám sát vận hành nông nghiệp công nghệ cao đã kết nối Datadog thành công!",
     "alert_type": "success",
     "tags": ["env:hackathon", "source:setup_verification"]
 }
