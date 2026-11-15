@@ -1,142 +1,81 @@
 # Frutiger Aqua • Smart Aquarium Real-time Operations 🐠📊
-### MongoDB User Group Vietnam Hackathon 2026: Real-time Operations (MongoDB × Datadog)
 
-Dự án xây dựng nền tảng giám sát sinh hóa thời gian thực, điều khiển 2 chiều tới phần cứng mô phỏng ESP32 (Wokwi) và tự động phát hiện – điều tra – phản ứng sự cố vận hành cho hệ thống bể cá cảnh/thủy sinh tuần hoàn (**Smart Aquarium Fleet**), kết hợp **MongoDB Atlas Time Series Collections** làm nền tảng dữ liệu vận hành chính và **Datadog Observability Platform** để giám sát toàn diện Metrics, Logs, APM Traces và Alert Monitors.
-
----
-
-## 📋 Mục lục Hồ sơ Bài nộp
-
-1. [Tên dự án và Mô tả bài toán](#1-tên-dự-án-và-mô-tả-bài-toán)
-2. [Thông tin Đội thi và Đầu mối Liên hệ](#2-thông-tin-đội-thi-và-đầu-mối-liên-hệ)
-3. [Kiến trúc Giải pháp và Ứng dụng](#3-kiến-trúc-giải-pháp-và-ứng-dụng)
-4. [Kiến trúc Dữ liệu & Data Model trên MongoDB](#4-kiến-trúc-dữ-liệu--data-model-trên-mongodb)
-5. [Kiến trúc Observability trên Datadog](#5-kiến-trúc-observability-trên-datadog)
-6. [Yêu cầu Môi trường, Cấu hình & Hướng dẫn Cài đặt](#6-yêu-cầu-môi-trường-cấu-hình--hướng-dẫn-cài-đặt)
-7. [Các bước Chạy thử MVP & Kiểm thử (Testing)](#7-các-bước-chạy-thử-mvp--kiểm-thử-testing)
-8. [Mô tả Sự cố Vận hành Trình diễn (Detect → Investigate → Respond)](#8-mô-tả-sự-cố-vận-hành-trình-diễn-detect--investigate--respond)
-9. [Bản demo MVP, Video Demo & Slide Thuyết trình](#9-bản-demo-mvp-video-demo--slide-thuyết-trình)
-10. [Khai báo Thành phần Tái sử dụng, Dataset & Công cụ AI](#10-khai-báo-thành-phần-tái-sử-dụng-dataset--công-cụ-ai)
+Hệ thống giám sát chất lượng nước và điều khiển bể cá thủy sinh thông minh theo thời gian thực (**Wokwi ESP32 + FastAPI + MongoDB Atlas Time Series + Datadog**).
 
 ---
 
-## 1. Tên dự án và Mô tả bài toán
-* **Tên dự án:** **Frutiger Aqua Smart Aquarium Real-time Operations** (Hệ thống Giám sát & Vận hành Bể Cá Thủy Sinh Thông Minh)
-* **Bài toán vận hành thực tế:** Trong các hệ thống bể cá cảnh, hồ san hô mini và hồ Koi đô thị sử dụng lọc sinh học tuần hoàn (`Canister Bio-Filter`, `Sump Protein Skimmer`, `Overflow UV Filter`), người vận hành thường xuyên đối mặt với 2 sự cố nghiêm trọng xảy ra âm thầm và gây chết cá chỉ trong vài giờ:
-  1. **Tắc nghẽn lọc tuần hoàn (`Pump Clogging`):** Cặn bẩn, rêu hoặc giá thể vi sinh bít kín đường ống hút/xả khiến lưu lượng bơm sụt giảm mạnh xuống `< 1.0 LPM` và mực nước tụt nhanh, gây thiếu hụt oxy hòa tan tức thì.
-  2. **Sốc kiềm hóa pH (`Alkaline pH Drift`):** Nước ngừng tuần hoàn hoặc phân hủy hữu cơ tích tụ làm `pH` tăng vọt lên `> 7.6` (hoặc lệch `< 5.0`), chuyển hóa Amoni (`NH₄⁺`) thành khí độc Amoniac (`NH₃`) gây ngộ độc cá và san hô.
-* **Giải pháp:** Kết nối cảm biến phần cứng **ESP32 trên Wokwi** (`DS18B20`, `HC-SR04`, `pH`, `TDS/EC`, công tắc sự cố, LED & Buzzer, OLED `SSD1306`) và trình giả lập đội bể 3 khu vực (`AQUA-TANK-01`, `AQUA-TANK-02`, `AQUA-TANK-03`) với **FastAPI Backend** thông qua **Wokwi Serial Auto-Bridge** (`RFC2217` cổng `4000`, đồng bộ `< 0.2s`), lưu trữ toàn bộ telemetry vào **MongoDB Atlas Time Series** và đẩy Metrics + Logs + Traces + Events lên **Datadog** theo chu trình khép kín **Detect → Investigate → Respond**.
+## 1. Giới thiệu dự án
+
+Trong vận hành bể cá cảnh và thủy sinh tuần hoàn, hai sự cố nguy hiểm nhất thường xảy ra âm thầm là **tắc nghẽn lọc sinh học** (lưu lượng tụt xuống `< 1.0 LPM` gây thiếu oxy) và **sốc kiềm `pH > 7.6`** (làm chuyển hóa Amoni thành khí độc `NH₃`).
+
+**Frutiger Aqua** giải quyết bài toán này bằng cách kết nối mạch phần cứng mô phỏng **ESP32 trên Wokwi** (`DS18B20`, `HC-SR04`, cảm biến `pH`, `TDS/EC`, màn hình OLED `SSD1306`, còi Buzzer, 3 đèn LED) và trình giả lập đa bể (`AQUA-TANK-01/02/03`) với:
+* **FastAPI Backend + Wokwi Auto-Bridge:** Thu thập dữ liệu mỗi 2 giây và đồng bộ lệnh điều khiển 2 chiều từ Web xuống mạch ESP32 trong `< 0.2s`.
+* **MongoDB Atlas (`smart_aquarium_iot`):** Lưu chuỗi thời gian cảm biến trong Time Series Collection `aquarium_telemetry` (`expireAfterSeconds: 604800`), tổng hợp theo giờ (`$dateTrunc`), phát hiện xu hướng (`$setWindowFields`) và theo dõi vòng đời sự cố (`incidents`).
+* **Datadog (`datadoghq.com`):** Giám sát Metrics, Logs (`[AQUA_ALERT]`), APM Traces (`ddtrace`) và kích hoạt cảnh báo P1 Monitor kèm Webhook tự phục hồi.
 
 ---
 
-## 2. Thông tin Đội thi và Đầu mối Liên hệ
-* **Thành viên & Đầu mối liên hệ:** **Vũ Đức Bình An** — `binhan08052005@gmail.com`
-* **GitHub Repository:** https://github.com/vdban/mug-hackathon-2026-iot
+## 2. Cách hoạt động & Cấu trúc thư mục
 
----
+### Luồng hoạt động 2 chiều
+1. **Thu thập cảm biến (`wokwi/` & `simulator/`):** Cứ mỗi 2 giây, mạch ESP32 gửi các thông số nước (`pH`, `EC/TDS`, nhiệt độ, mực nước, lưu lượng lọc) qua cổng nối tiếp RFC2217 (`:4000`), hoặc script `sensor_simulator.py` gửi batch HTTP cho cả 3 bể về API `POST /api/telemetry/ingest`.
+2. **Lưu trữ & Phân tích (`MongoDB Atlas`):** Backend ghi telemetry vào Time Series Collection `aquarium_telemetry`. Nếu lưu lượng `< 1.0 LPM` hoặc `pH > 7.6` (hoặc `pH < 5.0`), hệ thống tự động mở bản ghi sự cố `ACTIVE` trong collection `incidents`. Web `/data` truy vấn dữ liệu trực tiếp qua 3 Aggregation Pipelines (`$group`, `$dateTrunc`, `$setWindowFields`).
+3. **Cảnh báo (`Datadog`):** Backend đẩy đồng bộ Metrics, Logs (gắn `dd.trace_id`, `dd.span_id`) và Events lên Datadog Dashboard để theo dõi sức khỏe hệ thống và bật Monitor P1 khi có sự cố.
+4. **Điều khiển & Khắc phục (`< 0.2s`):** Khi bấm **Bật/Tắt Sục Oxy**, **Gây Sự Cố**, **Cho Cá Ăn** hoặc **Xả Ngược & Cân Bằng pH** trên Web (`/`), luồng Auto-Bridge đẩy lệnh `CMD:FAULT=...,BUBBLER=...` xuống ngay chân GPIO của ESP32 để đổi trạng thái đèn/còi/OLED, đồng thời chốt sự cố `RESOLVED` và tính thời gian khắc phục (`mttr_seconds`).
 
-## 3. Kiến trúc Giải pháp và Ứng dụng
-Hệ thống gồm 4 tầng phối hợp theo thời gian thực:
-1. **Tầng Thiết bị & Phần cứng Mô phỏng (`wokwi/`, `simulator/`):**
-   * Mạch **ESP32 DevKit V4** trên Wokwi (`wokwi/sketch.ino`, `wokwi/diagram.json`) mô phỏng bể chính `AQUA-TANK-01` với màn hình OLED SSD1306, cảm biến nhiệt độ DS18B20, siêu âm mực nước HC-SR04, 2 biến trở pH/EC, công tắc gạt sự cố (`Fault Switch`), 3 đèn LED (`Filter Pump`, `Auto Flush / Oxy`, `Critical Alarm`) và còi Buzzer.
-   * Ngoài ra, `simulator/sensor_simulator.py` mô phỏng đồng thời cả 3 bể (`AQUA-TANK-01`, `AQUA-TANK-02`, `AQUA-TANK-03`).
-2. **Tầng Ứng dụng, API & Auto-Bridge (`backend/app/main.py`):**
-   * **FastAPI + Uvicorn** tích hợp sẵn luồng nền **Wokwi Auto-Bridge** (`lifespan` thread kết nối TCP RFC2217 `127.0.0.1:4000` ↔ Backend trong `< 0.2s`).
-   * **Web App tách 2 trang riêng biệt (Frutiger Aqua + Firebase Google Sign-In):**
-     * `/` (`index.html`): **Trung tâm Điều khiển Thuần túy** (bể cá tương tác, chọn bể `01/02/03`, 4 nút điều khiển `INJECT_FAULT`, `RESOLVE`, `TOGGLE_BUBBLER`, `FEED_FISH`, nhật ký thao tác kèm tài khoản Google).
-     * `/data` & `/data.html`: **Trang Dữ liệu & Biểu đồ** (thẻ telemetry 3 bể, biểu đồ Chart.js vẽ từ MongoDB `$setWindowFields`, bảng tổng hợp theo giờ `$dateTrunc`, nhật ký sự cố `incidents` & MTTR).
-     * `/slides`: **Slide Thuyết trình Chung kết (10 slides)** hỗ trợ trình chiếu trực tiếp và xuất PDF 1-click.
-3. **Tầng Dữ liệu Vận hành Chính (`MongoDB Atlas — smart_aquarium_iot`):**
-   * Time Series Collection `aquarium_telemetry` (`granularity="seconds"`, TTL 7 ngày) + Collections `incidents` & `devices`.
-4. **Tầng Quan sát & Cảnh báo (`Datadog Platform`):**
-   * Dashboard live (`n72-nmb-pp6`), 2 Monitors P1 (`345173530` & `345174672`), Log Management, APM Tracing (`ddtrace`), Event Stream và Webhook tự động phục hồi sự cố (`/api/webhooks/datadog`).
-
-👉 *Xem chi tiết sơ đồ kiến trúc tại:* [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-
-### 📂 Cấu trúc Thư mục Dự án (Project Structure)
+### Cấu trúc thư mục
 ```text
 mug-hackathon-2026-iot/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py              # FastAPI server, API & built-in Wokwi Auto-Bridge
+│   │   ├── main.py              # FastAPI server, REST API & built-in Wokwi Auto-Bridge (:4000)
 │   │   ├── database.py          # Kết nối MongoDB Atlas (smart_aquarium_iot)
 │   │   ├── models.py            # Pydantic schemas cho telemetry & control
 │   │   ├── analytics.py         # 3 Aggregation Pipelines ($group, $dateTrunc, $setWindowFields)
-│   │   ├── datadog_service.py   # Gửi Metrics, Logs v2, Events & APM Tracing (ddtrace)
+│   │   ├── datadog_service.py   # Gửi Metrics, Logs Intake v2, Events & APM Tracing (ddtrace)
 │   │   ├── firebase_service.py  # Đồng bộ Firebase Realtime Database (tùy chọn)
-│   │   └── static/              # Web UI Frutiger Aqua (/, /data, /slides) + Firebase Hosting
+│   │   └── static/              # Web UI Frutiger Aqua (index.html, data.html, slides.html)
 │   ├── Dockerfile
 │   └── requirements.txt
-├── wokwi/                       # Phần cứng mô phỏng ESP32 (sketch.ino, diagram.json, build_firmware.ps1)
-├── simulator/                   # Trình giả lập đa bể cá (AQUA-TANK-01/02/03)
-├── datadog/                     # Cấu hình JSON cho Datadog Dashboard & P1 Monitors
-├── scripts/                     # Setup MongoDB, Provision Datadog, Wokwi Bridge, Trigger Incident
-├── docs/                        # Tài liệu kỹ thuật, SVG mockup & Slide thuyết trình (slides.html)
-├── tests/                       # Bộ kiểm thử tự động API (pytest)
+├── wokwi/                       # Mạch ESP32 Wokwi (sketch.ino, diagram.json, build_firmware.ps1)
+├── simulator/                   # Trình giả lập 3 bể cá (sensor_simulator.py)
+├── datadog/                     # JSON cấu hình Datadog Dashboard & P1 Monitors
+├── scripts/                     # setup_mongo.py, provision_datadog.py, wokwi_bridge.py, trigger_incident.py
+├── docs/                        # Tài liệu kiến trúc & chi tiết kỹ thuật
+├── tests/                       # Bộ kiểm thử tự động (test_api.py)
 ├── docker-compose.yml
 ├── firebase.json
 └── Start_Smart_Aquarium.bat     # Khởi chạy nhanh 1-click trên Windows
 ```
 
----
-
-## 4. Kiến trúc Dữ liệu & Data Model trên MongoDB
-Áp dụng chuẩn thiết kế **Time Series in MongoDB** trong database `smart_aquarium_iot`:
-* **Time Series Collection (`aquarium_telemetry`):**
-  * `timeField`: `"ts"` (ISODate UTC).
-  * `metaField`: `"sensor"` (`id`, `zone`, `crop`, `system_type`).
-  * `granularity`: `"seconds"` (tối ưu nén bucket cho tần suất gửi mỗi 2 giây).
-  * `expireAfterSeconds`: `604800` (TTL Index tự động dọn dữ liệu quá 7 ngày).
-* **Compound Indexes hiệu quả:**
-  * `[("sensor.id", 1), ("ts", -1)]`
-  * `[("sensor.crop", 1), ("ts", -1)]`
-* **Collections vận hành bổ trợ:** `incidents` (lưu `detected_at`, `resolved_at`, `mttr_seconds`, `dd_trace_id`, `trigger_reading`, `status`) và `devices` (quản lý 3 bể cá).
-* **3 Aggregation Pipelines (`backend/app/analytics.py`):**
-  1. `get_latest_telemetry_pipeline`: `$match` theo `ts` → `$sort` → `$group` + `$first` lấy trạng thái mới nhất của từng bể.
-  2. `get_hourly_summary_pipeline`: `$match` → `$dateTrunc` (`unit: "hour"`, `timezone: "Asia/Ho_Chi_Minh"`) thống kê `avgPh`, `minPh`, `maxPh`, `avgEcPpm`, `avgFlowLpm`, `avgWaterLevelPct`.
-  3. `get_trend_and_anomalies_pipeline`: Window Function `$setWindowFields` (`documents: [-4, 0]`) tính Moving Average 5 mẫu (`movingAvgFlowLpm`, `movingAvgPh`) để phát hiện sớm tắc lọc và sốc kiềm.
-
-👉 *Xem chi tiết schema và pipeline tại:* [docs/MONGODB_MODEL.md](docs/MONGODB_MODEL.md)
+* Tài liệu kỹ thuật chi tiết trong `docs/`:
+  * [Kiến trúc hệ thống (ARCHITECTURE.md)](docs/ARCHITECTURE.md)
+  * [Mô hình dữ liệu MongoDB (MONGODB_MODEL.md)](docs/MONGODB_MODEL.md)
+  * [Cấu hình Datadog (DATADOG_SETUP.md)](docs/DATADOG_SETUP.md)
+  * [Kịch bản sự cố (INCIDENT_SCENARIO.md)](docs/INCIDENT_SCENARIO.md)
 
 ---
 
-## 5. Kiến trúc Observability trên Datadog
-* **Dashboard vận hành (`n72-nmb-pp6`):** Hiển thị real-time `smartfarm.pump_flow_lpm`, `smartfarm.ph`, `smartfarm.ec_ppm`, `smartfarm.water_temp`, `smartfarm.water_level_pct`, độ trễ ghi MongoDB `smartfarm.ingest.latency_ms`, `smartfarm.alerts.count`, `smartfarm.incidents.mttr_seconds` và live Log Stream.
-* **Monitors / Alerts P1:**
-  * ID `345173530` ([datadog/monitor_pipe_clog.json](datadog/monitor_pipe_clog.json)): `avg(last_1m):avg:smartfarm.pump_flow_lpm{*} by {rack_id} < 1` (critical `< 1.0`, warning `< 2.0`).
-  * ID `345174672` ([datadog/monitor_farm_alert_log.json](datadog/monitor_farm_alert_log.json)): Theo dõi đột biến log sự cố (kèm monitor pH drift dự phòng ID `345173822` khi account không bật log monitor).
-* **Năng lực bổ sung & Liên kết đa chiều (`backend/app/datadog_service.py`):**
-  * **APM Distributed Tracing (`ddtrace`):** Tự động lấy `trace_id` & `span_id` qua `get_current_trace_context()`.
-  * **Log Management (Logs Intake v2) & Event Stream (`/api/v1/events`):** Nhúng đồng bộ `dd.trace_id`, `dd.span_id` và bộ tags vận hành (`rack_id`, `crop`, `zone`, `env:hackathon`, `service:smart-aquarium-service`) để liên kết 1-click giữa Alert ↔ Log ↔ Trace ↔ Bản ghi `incidents` trong MongoDB.
-
-👉 *Xem chi tiết cấu hình tại:* [docs/DATADOG_SETUP.md](docs/DATADOG_SETUP.md)
-
----
-
-## 6. Yêu cầu Môi trường, Cấu hình & Hướng dẫn Cài đặt
+## 3. Hướng dẫn cài đặt & Cách chạy
 
 ### Yêu cầu môi trường
-* **Python 3.10+** (đã xác minh chạy ổn định trên Python 3.12).
-* **MongoDB Atlas Cluster** (M0 Free Tier trở lên, đã thêm IP truy cập trong Network Access).
-* **Tài khoản Datadog** (`DD_API_KEY`, `DD_APP_KEY`, `DD_SITE=datadoghq.com`).
-* *(Tùy chọn)* **Wokwi for VS Code** + PlatformIO Core (để chạy mô phỏng mạch ESP32 nội bộ) hoặc Docker Desktop (nếu dùng Datadog Agent local).
+* **Python 3.10+** (đã test trên Python 3.12)
+* **MongoDB Atlas Cluster** (M0 trở lên)
+* **Tài khoản Datadog** (`DD_API_KEY`, `DD_APP_KEY`, `DD_SITE=datadoghq.com`)
+* *(Tùy chọn)* **Wokwi for VS Code** + **PlatformIO Core** nếu chạy mô phỏng phần cứng ESP32
 
-### Cài đặt & Cấu hình
+### Bước 1: Cài đặt thư viện & biến môi trường
 ```powershell
-# 1. Clone repository & vào thư mục dự án
-git clone <repo-url>
-cd mug-hackathon-2026-iot
-
-# 2. Tạo virtual environment & cài dependencies
+# Tạo virtual environment & cài dependencies
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r backend/requirements.txt
 
-# 3. Tạo file .env từ mẫu
+# Tạo file .env từ mẫu và điền thông tin MongoDB / Datadog của bạn
 Copy-Item .env.example .env
 ```
 
-Điền cấu hình vào `.env`:
+Cấu hình tối thiểu trong `.env`:
 ```env
 MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority
 MONGODB_DATABASE=smart_aquarium_iot
@@ -151,80 +90,39 @@ BACKEND_HOST=127.0.0.1
 BACKEND_PORT=8000
 ```
 
-### Khởi tạo MongoDB Atlas & Datadog
+### Bước 2: Khởi tạo MongoDB & Datadog
 ```powershell
-# Tạo Time Series collection aquarium_telemetry, indexes, collection incidents & 3 bể mẫu
+# Tạo Time Series collection, compound indexes và 3 bể cá mẫu
 python scripts/setup_mongo.py
 
 # Tạo Datadog Dashboard & Monitors P1 tự động qua API
 python scripts/provision_datadog.py
 ```
 
----
-
-## 7. Các bước Chạy thử MVP & Kiểm thử (Testing)
-
-### Cách A: Khởi chạy nhanh 1-Click (Khuyên dùng)
-* Double-click file [Start_Smart_Aquarium.bat](Start_Smart_Aquarium.bat) (hoặc mở workspace bằng VS Code có [.vscode/tasks.json](.vscode/tasks.json) tự bật).
-* Hoặc chạy tay Backend (+ sẵn **Wokwi Auto-Bridge** chạy ngầm):
+### Bước 3: Khởi chạy hệ thống
+* **Cách nhanh (Windows):** Double-click file [`Start_Smart_Aquarium.bat`](Start_Smart_Aquarium.bat) để tự mở Backend (+ Wokwi Auto-Bridge) và trình duyệt.
+* **Cách chạy bằng lệnh:**
   ```powershell
   cd backend
   python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
   ```
-* Truy cập Web UI:
+* Các trang Web sau khi chạy:
   * **Trang Điều khiển:** http://127.0.0.1:8000/
   * **Trang Dữ liệu & Biểu đồ:** http://127.0.0.1:8000/data
-  * **Slide Thuyết trình:** http://127.0.0.1:8000/slides
+  * **Slide trình chiếu:** http://127.0.0.1:8000/slides
   * **Swagger API Docs:** http://127.0.0.1:8000/docs
 
-### Cách B: Kết nối Mạch Phần cứng ESP32 trên Wokwi
-1. Nếu có sửa [wokwi/sketch.ino](wokwi/sketch.ino), biên dịch lại firmware bằng:
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File wokwi\build_firmware.ps1
-   ```
-2. Mở [wokwi/diagram.json](wokwi/diagram.json) trong Wokwi Simulator và bấm **Start Simulation (▶️)**.
-3. Backend đang chạy sẽ tự kết nối vào cổng `127.0.0.1:4000` (`rfc2217ServerPort = 4000`), đọc telemetry từ ESP32 đẩy vào MongoDB Atlas + Datadog và gửi ngược lệnh Web UI xuống LED/Còi/OLED trong `< 0.2s`.
-*(Nếu muốn giả lập cả 3 bể cùng lúc không qua Wokwi, chạy `python simulator/sensor_simulator.py --interval 2.0`, hoặc bật nút "Web Telemetry Streamer" ngay trên trang Điều khiển).*
+### Bước 4: Chạy mạch ESP32 trên Wokwi (hoặc Simulator)
+* **Với Wokwi ESP32:** Mở [`wokwi/diagram.json`](wokwi/diagram.json) trong VS Code và bấm **Start Simulation** (Backend sẽ tự kết nối cổng `127.0.0.1:4000`). Nếu sửa code [`wokwi/sketch.ino`](wokwi/sketch.ino), biên dịch lại firmware bằng:
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File wokwi\build_firmware.ps1
+  ```
+* **Với trình giả lập phần mềm 3 bể cá:**
+  ```powershell
+  python simulator/sensor_simulator.py --interval 2.0
+  ```
 
-### Kiểm thử Tự động (Pytest)
+### Bước 5: Chạy kiểm thử tự động
 ```powershell
 python -m pytest -v tests/test_api.py
 ```
-Kiểm tra toàn bộ **8 test cases**: `/health`, `/`, `/data`, `/data.html`, batch ingestion, phát hiện lỗi + mở incident `ACTIVE`, luồng `INJECT_FAULT` → `/api/incident/respond` tính MTTR, Datadog Webhook tự phục hồi, 3 endpoints Aggregation Analytics, và điều khiển `TOGGLE_BUBBLER` / `FEED_FISH`.
-
----
-
-## 8. Mô tả Sự cố Vận hành Trình diễn (Detect → Investigate → Respond)
-1. **Phát hiện (Detect):**
-   * Gạt công tắc **`Fault Switch`** trên mạch Wokwi (hoặc bấm nút **🚨 Gây Sự Cố** trên Web Control Center, hoặc chạy `python scripts/trigger_incident.py --fault --device AQUA-TANK-01`).
-   * Lưu lượng bơm `AQUA-TANK-01` tụt từ `4.5 LPM` xuống `0.35 LPM`, `pH` tăng vọt lên `> 8.15`. Trên mạch Wokwi: đèn đỏ `Critical Alarm` bật sáng, còi hú, OLED hiện `STATUS: [CLOG ALERT!]`. Backend ghi nhận 1 incident `ACTIVE` vào `smart_aquarium_iot.incidents`, log `[AQUA_ALERT]` kèm `dd.trace_id`, Event Stream và **Datadog Monitor `345173530` nổ cảnh báo P1**.
-2. **Điều tra (Investigate):**
-   * Từ **Datadog Monitor Alert** → mở **Log Stream** (`[AQUA_ALERT]`) → bấm **View Trace** kiểm tra span `POST /api/telemetry/ingest` & thời gian ghi MongoDB (`smartfarm.ingest.latency_ms`).
-   * Mở trang `/data` (hoặc gọi `GET /api/analytics/trend?rack_id=AQUA-TANK-01`) để xem kết quả **`$setWindowFields`** cho thấy đường trung bình trượt `movingAvgFlowLpm` rơi dưới ngưỡng `1.0 LPM` và `movingAvgPh` vượt ngưỡng `7.6`.
-3. **Phản ứng (Respond):**
-   * Bấm nút **🛠️ Xả Ngược & Cân Bằng pH** trên Web UI (hoặc chạy `python scripts/trigger_incident.py --resolve --device AQUA-TANK-01`, hoặc nhận Datadog Webhook `POST /api/webhooks/datadog` với `"auto_remediate": true`).
-   * Lệnh xả ngược truyền xuống Wokwi ESP32 tắt còi & đèn đỏ, khôi phục lọc về `4.5 LPM` và `pH` về vùng an toàn; Backend đóng incident `ACTIVE` → `RESOLVED`, tính chính xác **MTTR (`mttr_seconds`)** và đẩy metric `smartfarm.incidents.mttr_seconds` lên Datadog.
-
-👉 *Xem kịch bản quay demo từng giây tại:* [docs/INCIDENT_SCENARIO.md](docs/INCIDENT_SCENARIO.md)
-
----
-
-## 9. Bản demo MVP, Video Demo & Slide Thuyết trình
-* **Web Control Center (Firebase Hosting Live):** https://smart-aquarium-mug-2026.web.app *(Hỗ trợ Đăng nhập Google + Cloud Demo fallback + nối về Backend Local qua `?api=...`)*
-* **Datadog Live Dashboard:** https://app.datadoghq.com/dashboard/n72-nmb-pp6/smart-hydroponics-fleet-operations-mongodb--datadog
-* **Slide Thuyết trình Chung kết (Web & In PDF 1-Click):** [docs/slides.html](docs/slides.html) *(hoặc truy cập `http://127.0.0.1:8000/slides` khi chạy Backend)*
-* **Thiết kế UI & Kiến trúc trên Figma:**
-  * [Figma Design (Frutiger Aqua UI)](https://www.figma.com/design/Q14P0NQsoVYwJySP4veLSu?node-id=1-3&autoplay-code-preview=1-3&code-import-attempt-id=c93b32198cd17fbbd10ed20cd13edca6fa9735b2b8ba62a08722bc39dee4f1d2&code-import-node-id=1-3&code-import-surface=code_layer)
-  * [FigJam Architecture Diagram](https://www.figma.com/board/b5IvzYRRUWcEJ2llejPcA5?utm_source=other&utm_content=edit_in_figjam&oai_id=&request_id=f9af71b8-5919-4cfa-bf93-793fda415161&architecture=true)
-  * Vector SVG gốc: [docs/frutiger_aqua_mockup.svg](docs/frutiger_aqua_mockup.svg)
-* **Link Video Demo (YouTube / Google Drive):** *(Xem hướng dẫn quay theo kịch bản trong [docs/INCIDENT_SCENARIO.md](docs/INCIDENT_SCENARIO.md))*
-
----
-
-## 10. Khai báo Thành phần Tái sử dụng, Dataset & Công cụ AI
-* **Thành phần & thư viện mã nguồn mở tái sử dụng:**
-  * Backend & DB: FastAPI, Uvicorn, Pydantic, PyMongo, Requests, python-dotenv, ddtrace, pytest, httpx.
-  * Frontend & Auth: Tailwind CSS (CDN), Chart.js (CDN), Firebase Authentication (Google Sign-In SDK) & Firebase Hosting.
-  * Phần cứng mô phỏng ESP32 (Wokwi & PlatformIO Arduino Framework): `Adafruit GFX Library`, `Adafruit SSD1306`, `ArduinoJson`, `DallasTemperature`, `OneWire`, `WiFi`, `HTTPClient`.
-* **Dataset:** Không sử dụng dữ liệu bên ngoài hay dữ liệu cá nhân/doanh nghiệp. Toàn bộ chuỗi dữ liệu telemetry được tạo hoàn toàn từ cảm biến phần cứng mô phỏng **Wokwi ESP32** ([wokwi/sketch.ino](wokwi/sketch.ino)) và trình sinh dữ liệu toán học **Simulator** ([simulator/sensor_simulator.py](simulator/sensor_simulator.py)).
-* **Công cụ AI đã sử dụng:** **Google Antigravity (Gemini)** hỗ trợ thiết kế kiến trúc hệ thống, chuẩn hóa schema MongoDB Time Series, viết code mẫu FastAPI/Arduino/UI Frutiger Aqua, tạo script tự động hóa Wokwi Auto-Bridge, rà soát kiểm thử và biên soạn tài liệu thuyết trình.
