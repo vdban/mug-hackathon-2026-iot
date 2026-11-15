@@ -14,7 +14,7 @@
     }
   },
   "hosting": {
-    "public": "firebase_web/public",
+    "public": "backend/app/static",
     "cleanUrls": true,
     "ignore": [
       "firebase.json",

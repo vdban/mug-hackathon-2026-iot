@@ -30,10 +30,8 @@ Dự án xây dựng nền tảng giám sát sinh hóa thời gian thực, đi�
 ---
 
 ## 2. Thông tin Đội thi và Đầu mối Liên hệ
-> *Ghi chú: Hướng dẫn điền nhanh trước khi nộp được tổng hợp sẵn trong [docs/NOP_BAI_NHANH.md](docs/NOP_BAI_NHANH.md).*
-* **Tên đội:** *(Điền tên đội của bạn / Cá nhân)*
-* **Thành viên:** *(Điền Họ tên – Vai trò – Email từng thành viên)*
-* **Đầu mối liên hệ (Team Lead):** *(Họ tên – Số điện thoại – Email liên hệ)*
+* **Thành viên & Đầu mối liên hệ:** **Vũ Đức Bình An** — `binhan08052005@gmail.com`
+* **GitHub Repository:** https://github.com/vdban/mug-hackathon-2026-iot
 
 ---
 
@@ -54,6 +52,31 @@ Hệ thống gồm 4 tầng phối hợp theo thời gian thực:
    * Dashboard live (`n72-nmb-pp6`), 2 Monitors P1 (`345173530` & `345174672`), Log Management, APM Tracing (`ddtrace`), Event Stream và Webhook tự động phục hồi sự cố (`/api/webhooks/datadog`).
 
 👉 *Xem chi tiết sơ đồ kiến trúc tại:* [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
+### 📂 Cấu trúc Thư mục Dự án (Project Structure)
+```text
+mug-hackathon-2026-iot/
+├── backend/
+│   ├── app/
+│   │   ├── main.py              # FastAPI server, API & built-in Wokwi Auto-Bridge
+│   │   ├── database.py          # Kết nối MongoDB Atlas (smart_aquarium_iot)
+│   │   ├── models.py            # Pydantic schemas cho telemetry & control
+│   │   ├── analytics.py         # 3 Aggregation Pipelines ($group, $dateTrunc, $setWindowFields)
+│   │   ├── datadog_service.py   # Gửi Metrics, Logs v2, Events & APM Tracing (ddtrace)
+│   │   ├── firebase_service.py  # Đồng bộ Firebase Realtime Database (tùy chọn)
+│   │   └── static/              # Web UI Frutiger Aqua (/, /data, /slides) + Firebase Hosting
+│   ├── Dockerfile
+│   └── requirements.txt
+├── wokwi/                       # Phần cứng mô phỏng ESP32 (sketch.ino, diagram.json, build_firmware.ps1)
+├── simulator/                   # Trình giả lập đa bể cá (AQUA-TANK-01/02/03)
+├── datadog/                     # Cấu hình JSON cho Datadog Dashboard & P1 Monitors
+├── scripts/                     # Setup MongoDB, Provision Datadog, Wokwi Bridge, Trigger Incident
+├── docs/                        # Tài liệu kỹ thuật, SVG mockup & Slide thuyết trình (slides.html)
+├── tests/                       # Bộ kiểm thử tự động API (pytest)
+├── docker-compose.yml
+├── firebase.json
+└── Start_Smart_Aquarium.bat     # Khởi chạy nhanh 1-click trên Windows
+```
 
 ---
 
@@ -182,7 +205,7 @@ Kiểm tra toàn bộ **8 test cases**: `/health`, `/`, `/data`, `/data.html`, b
    * Bấm nút **🛠️ Xả Ngược & Cân Bằng pH** trên Web UI (hoặc chạy `python scripts/trigger_incident.py --resolve --device AQUA-TANK-01`, hoặc nhận Datadog Webhook `POST /api/webhooks/datadog` với `"auto_remediate": true`).
    * Lệnh xả ngược truyền xuống Wokwi ESP32 tắt còi & đèn đỏ, khôi phục lọc về `4.5 LPM` và `pH` về vùng an toàn; Backend đóng incident `ACTIVE` → `RESOLVED`, tính chính xác **MTTR (`mttr_seconds`)** và đẩy metric `smartfarm.incidents.mttr_seconds` lên Datadog.
 
-👉 *Xem kịch bản quay demo từng giây tại:* [docs/INCIDENT_SCENARIO.md](docs/INCIDENT_SCENARIO.md) và [docs/NOP_BAI_NHANH.md](docs/NOP_BAI_NHANH.md)
+👉 *Xem kịch bản quay demo từng giây tại:* [docs/INCIDENT_SCENARIO.md](docs/INCIDENT_SCENARIO.md)
 
 ---
 
@@ -194,7 +217,7 @@ Kiểm tra toàn bộ **8 test cases**: `/health`, `/`, `/data`, `/data.html`, b
   * [Figma Design (Frutiger Aqua UI)](https://www.figma.com/design/Q14P0NQsoVYwJySP4veLSu?node-id=1-3&autoplay-code-preview=1-3&code-import-attempt-id=c93b32198cd17fbbd10ed20cd13edca6fa9735b2b8ba62a08722bc39dee4f1d2&code-import-node-id=1-3&code-import-surface=code_layer)
   * [FigJam Architecture Diagram](https://www.figma.com/board/b5IvzYRRUWcEJ2llejPcA5?utm_source=other&utm_content=edit_in_figjam&oai_id=&request_id=f9af71b8-5919-4cfa-bf93-793fda415161&architecture=true)
   * Vector SVG gốc: [docs/frutiger_aqua_mockup.svg](docs/frutiger_aqua_mockup.svg)
-* **Link Video Demo (YouTube / Google Drive):** *(Điền link sau khi quay xong theo kịch bản 2 phút trong `docs/NOP_BAI_NHANH.md`)*
+* **Link Video Demo (YouTube / Google Drive):** *(Xem hướng dẫn quay theo kịch bản trong [docs/INCIDENT_SCENARIO.md](docs/INCIDENT_SCENARIO.md))*
 
 ---
 

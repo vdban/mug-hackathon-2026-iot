@@ -1,5 +1,5 @@
 """
-Script kiểm tra kết nối với Datadog API cho Smart Hydroponics Farm.
+Script kiểm tra kết nối với Datadog API cho Frutiger Aqua Smart Aquarium.
 Gửi 1 metric và 1 event thử nghiệm để xác nhận Datadog API Key hoạt động chính xác.
 """
 
@@ -28,7 +28,7 @@ metric_payload = {
             "metric": "smartfarm.test_ping",
             "points": [[now, 100]],
             "type": "gauge",
-            "tags": ["env:hackathon", "project:smart_hydroponics"]
+            "tags": ["env:hackathon", "project:smart_aquarium"]
         }
     ]
 }
@@ -42,8 +42,8 @@ else:
 # 2. Gửi Event thử nghiệm
 event_url = f"https://api.{DD_SITE}/api/v1/events"
 event_payload = {
-    "title": "🌱 Smart Hydroponics Farm Datadog Connected",
-    "text": "Hệ thống giám sát vận hành nông nghiệp công nghệ cao đã kết nối Datadog thành công!",
+    "title": "🐠 Frutiger Aqua Smart Aquarium Datadog Connected",
+    "text": "Hệ thống giám sát vận hành bể cá thông minh đã kết nối Datadog thành công!",
     "alert_type": "success",
     "tags": ["env:hackathon", "source:setup_verification"]
 }
