@@ -3,352 +3,965 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Hydroponics Farm | Real-time Operations Monitor</title>
+  <title>Bảng Điều Khiển | Frutiger Aqua Smart Aquarium</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    @keyframes pulse-slow { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    :root {
+      --aqua-deep: #004e75;
+      --aqua-mid: #0083b0;
+      --aqua-sky: #56ccf2;
+      --aqua-ice: #b8f1ff;
+    }
+
+    body {
+      font-family: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(180deg, #b8f1ff 0%, #56ccf2 38%, #0083b0 75%, #004e75 100%);
+      background-attachment: fixed;
+      color: #05385b;
+      overflow-x: hidden;
+    }
+
+    .font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+    .caustic-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse at 20% 0%, rgba(255, 255, 255, 0.55) 0%, transparent 50%),
+        radial-gradient(ellipse at 78% 10%, rgba(184, 241, 255, 0.5) 0%, transparent 45%),
+        repeating-linear-gradient(
+          115deg,
+          rgba(255, 255, 255, 0.06) 0px,
+          rgba(255, 255, 255, 0.06) 24px,
+          transparent 24px,
+          transparent 72px
+        );
+    }
+
+    .aqua-glass {
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.74), rgba(210, 248, 255, 0.44));
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1.5px solid rgba(255, 255, 255, 0.85);
+      box-shadow: 0 14px 36px -10px rgba(0, 78, 117, 0.35), inset 0 2px 3px rgba(255, 255, 255, 0.9);
+      border-radius: 24px;
+    }
+
+    .aqua-subcard {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(226, 248, 255, 0.58));
+      border: 1px solid rgba(255, 255, 255, 0.92);
+      box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.95), 0 4px 14px rgba(0, 100, 148, 0.12);
+      border-radius: 16px;
+    }
+
+    .gel-btn {
+      position: relative;
+      overflow: hidden;
+      border-radius: 9999px;
+      font-weight: 700;
+      color: #ffffff;
+      text-shadow: 0 1px 2px rgba(0, 35, 60, 0.35);
+      border: 1.5px solid rgba(255, 255, 255, 0.85);
+      box-shadow: 0 8px 20px -4px rgba(0, 62, 99, 0.45), inset 0 -3px 6px rgba(0, 0, 0, 0.18);
+      transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+      cursor: pointer;
+    }
+    .gel-btn::before {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 6%;
+      right: 6%;
+      height: 46%;
+      border-radius: 9999px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.08));
+      pointer-events: none;
+    }
+    .gel-btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
+    .gel-btn:active { transform: scale(0.97); }
+    .gel-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .gel-aqua { background: linear-gradient(180deg, #48cae4 0%, #0096c7 55%, #0077b6 100%); }
+    .gel-lime { background: linear-gradient(180deg, #80ed99 0%, #38b000 60%, #2b9348 100%); }
+    .gel-coral { background: linear-gradient(180deg, #ff758f 0%, #e63946 58%, #b91c1c 100%); }
+    .gel-gold { background: linear-gradient(180deg, #ffd166 0%, #f77f00 60%, #d97706 100%); }
+    .gel-indigo { background: linear-gradient(180deg, #818cf8 0%, #4f46e5 58%, #3730a3 100%); }
+
+    .nav-pill {
+      border-radius: 9999px;
+      font-weight: 700;
+      padding: 0.42rem 0.95rem;
+      font-size: 0.75rem;
+      border: 1.5px solid rgba(255, 255, 255, 0.9);
+      transition: all 0.16s ease;
+    }
+    .nav-pill.inactive {
+      background: rgba(255, 255, 255, 0.72);
+      color: #075985;
+    }
+    .nav-pill.inactive:hover {
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    .rack-tab {
+      border-radius: 16px;
+      border: 1.5px solid rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.68);
+      color: #0c4a6e;
+      transition: all 0.16s ease;
+    }
+    .rack-tab.active {
+      background: linear-gradient(180deg, #48cae4 0%, #0096c7 70%, #0077b6 100%);
+      color: #ffffff;
+      box-shadow: 0 8px 18px -4px rgba(0, 119, 182, 0.45);
+    }
+
+    .bubble-bg {
+      position: fixed;
+      border-radius: 9999px;
+      pointer-events: none;
+      z-index: 1;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.92), rgba(255,255,255,0.35) 45%, rgba(86,204,242,0.18) 80%, rgba(255,255,255,0.75) 100%);
+      border: 1px solid rgba(255,255,255,0.85);
+      box-shadow: inset -4px -6px 12px rgba(0, 147, 196, 0.2), 0 8px 20px rgba(0, 110, 160, 0.15);
+      animation: floatBubble linear infinite;
+    }
+
+    @keyframes floatBubble {
+      0% { transform: translateY(105vh) scale(0.85); opacity: 0; }
+      10% { opacity: 0.78; }
+      90% { opacity: 0.78; }
+      100% { transform: translateY(-15vh) scale(1.1); opacity: 0; }
+    }
+
+    .tank-viewport {
+      position: relative;
+      height: 250px;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 2px solid rgba(255, 255, 255, 0.92);
+      background: linear-gradient(180deg, rgba(224, 247, 255, 0.78) 0%, rgba(144, 224, 239, 0.65) 100%);
+      box-shadow: inset 0 6px 20px rgba(0, 82, 120, 0.18);
+    }
+
+    .tank-water {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 88%;
+      transition: height 0.7s ease, background 0.7s ease;
+      background: linear-gradient(180deg, rgba(72, 202, 228, 0.72) 0%, rgba(0, 150, 199, 0.85) 60%, rgba(0, 95, 140, 0.92) 100%);
+    }
+    .tank-water.critical {
+      background: linear-gradient(180deg, rgba(244, 114, 182, 0.72) 0%, rgba(217, 70, 239, 0.68) 45%, rgba(153, 27, 27, 0.85) 100%);
+    }
+
+    .water-surface {
+      position: absolute;
+      top: -8px;
+      left: 0;
+      right: 0;
+      height: 16px;
+      background: radial-gradient(ellipse at center, rgba(255,255,255,0.88) 0%, rgba(184,241,255,0.45) 70%, transparent 100%);
+      border-radius: 50%;
+    }
+
+    @keyframes swimRight {
+      0% { transform: translateX(-15%) translateY(0px); }
+      25% { transform: translateX(30%) translateY(-8px); }
+      50% { transform: translateX(75%) translateY(4px); }
+      75% { transform: translateX(115%) translateY(-6px); }
+      100% { transform: translateX(140%) translateY(0px); }
+    }
+    @keyframes swimLeft {
+      0% { transform: translateX(120%) scaleX(-1) translateY(0px); }
+      50% { transform: translateX(45%) scaleX(-1) translateY(-10px); }
+      100% { transform: translateX(-25%) scaleX(-1) translateY(2px); }
+    }
+    @keyframes tankBubbleRise {
+      0% { transform: translateY(0) scale(0.7); opacity: 0.1; }
+      20% { opacity: 0.9; }
+      100% { transform: translateY(-195px) scale(1.15); opacity: 0; }
+    }
+
+    .fish-1 { position: absolute; top: 30%; left: 0; font-size: 30px; animation: swimRight 11s linear infinite; filter: drop-shadow(0 3px 4px rgba(0,40,70,0.3)); }
+    .fish-2 { position: absolute; top: 56%; left: 0; font-size: 25px; animation: swimLeft 14s linear infinite; filter: drop-shadow(0 3px 4px rgba(0,40,70,0.3)); }
+    .fish-3 { position: absolute; top: 43%; left: 0; font-size: 22px; animation: swimRight 16s linear infinite 3s; filter: drop-shadow(0 3px 4px rgba(0,40,70,0.3)); }
+
+    .tank-bubble {
+      position: absolute;
+      bottom: 14px;
+      border-radius: 9999px;
+      background: radial-gradient(circle at 30% 30%, #ffffff, rgba(255,255,255,0.35));
+      border: 1px solid rgba(255,255,255,0.9);
+      animation: tankBubbleRise 2.4s ease-in infinite;
+    }
+
+    @keyframes pulse-slow { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
     .pulse-danger { animation: pulse-slow 1.2s infinite; }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans">
-  <!-- Top Navigation -->
-  <header class="border-b border-emerald-900/40 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
-    <div class="flex items-center space-x-3">
-      <span class="text-2xl">🌱</span>
-      <div>
-        <h1 class="text-lg font-bold bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
-          Smart Hydroponics Fleet Operations
-        </h1>
-        <p class="text-xs text-slate-400">MongoDB User Group Vietnam Hackathon 2026 • Real-time Operations</p>
+<body class="min-h-screen relative">
+  <div class="caustic-overlay"></div>
+
+  <!-- Decorative Floating Glossy Bubbles -->
+  <div class="bubble-bg w-16 h-16 left-[5%]" style="animation-duration: 18s; animation-delay: 0s;"></div>
+  <div class="bubble-bg w-10 h-10 left-[18%]" style="animation-duration: 14s; animation-delay: 3s;"></div>
+  <div class="bubble-bg w-24 h-24 left-[76%]" style="animation-duration: 22s; animation-delay: 2s;"></div>
+  <div class="bubble-bg w-12 h-12 left-[90%]" style="animation-duration: 15s; animation-delay: 6s;"></div>
+
+  <!-- Top Frutiger Aqua Glass Navigation -->
+  <header class="sticky top-0 z-50 px-4 md:px-6 pt-3">
+    <div class="max-w-7xl mx-auto aqua-glass px-5 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-600 border-2 border-white shadow-md flex items-center justify-center text-2xl">
+          🐠
+        </div>
+        <div>
+          <h1 class="text-base md:text-lg font-extrabold text-sky-950 tracking-tight">
+            Frutiger Aqua • Trung Tâm Điều Khiển Bể Cá
+          </h1>
+          <p class="text-[11px] font-medium text-sky-800/80">
+            MongoDB Atlas × Datadog Observability × Firebase Auth &amp; Hosting
+          </p>
+        </div>
       </div>
-    </div>
-    <div class="flex items-center space-x-4">
-      <span id="sysStatus" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-950 text-emerald-300 border border-emerald-700/60 shadow-sm">
-        <span class="w-2 h-2 mr-2 rounded-full bg-emerald-400 animate-pulse"></span> ALL SYSTEMS HEALTHY
-      </span>
-      <a href="/docs" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 transition">Swagger API</a>
+
+      <!-- Page Navigation -->
+      <nav class="flex flex-wrap items-center gap-2">
+        <a href="/" class="gel-btn gel-aqua px-4 py-1.5 text-xs">
+          🎮 Điều khiển
+        </a>
+        <a href="/data.html" class="nav-pill inactive">
+          📊 Dữ liệu &amp; Biểu đồ
+        </a>
+        <a id="swaggerLink" href="/docs" target="_blank" class="nav-pill inactive">
+          📚 API Docs
+        </a>
+      </nav>
+
+      <!-- Auth & Connection Status -->
+      <div class="flex flex-wrap items-center gap-2">
+        <span id="modeBadge" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white/80 text-sky-900 border border-white shadow-sm">
+          Đang kiểm tra API...
+        </span>
+        <span id="sysStatus" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100/90 text-emerald-800 border border-white shadow-sm">
+          <span class="w-2 h-2 mr-2 rounded-full bg-emerald-500 animate-pulse"></span> SẴN SÀNG
+        </span>
+
+        <!-- Google Auth Box -->
+        <div id="authLoggedOut" class="flex items-center gap-1.5">
+          <button onclick="signInWithGoogle()" class="gel-btn gel-indigo px-3.5 py-1.5 text-xs flex items-center gap-1.5">
+            <span>🔐</span><span>Đăng nhập Google</span>
+          </button>
+        </div>
+        <div id="authLoggedIn" class="hidden items-center gap-2 bg-white/85 border border-white rounded-full pl-1.5 pr-2.5 py-1 shadow-sm">
+          <img id="userAvatar" src="" alt="Avatar" class="w-6 h-6 rounded-full object-cover border border-sky-200 hidden">
+          <span id="userAvatarFallback" class="w-6 h-6 rounded-full bg-sky-500 text-white text-[11px] font-bold flex items-center justify-center">G</span>
+          <div class="leading-tight">
+            <div id="userName" class="text-[11px] font-extrabold text-sky-950">User</div>
+            <div id="userEmail" class="text-[10px] font-mono text-sky-700">email</div>
+          </div>
+          <button onclick="signOutUser()" class="ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 hover:bg-rose-200 text-rose-800 transition">
+            Thoát
+          </button>
+        </div>
+      </div>
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto p-6 space-y-6">
-    <!-- Quick Actions / Incident Demo Toolbar -->
-    <div class="bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 rounded-xl p-5 border border-emerald-900/40 flex flex-wrap items-center justify-between gap-4 shadow-xl">
-      <div>
-        <h2 class="text-sm font-semibold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
-          <span>🎮</span> Hackathon Real-time Incident Controller
-        </h2>
-        <p class="text-xs text-slate-400 mt-0.5">Kích hoạt sự cố nghẹt ống tuần hoàn & kiềm hóa pH tại Giàn Xà lách (HYDROPONIC-RACK-01)</p>
-      </div>
-      <div class="flex items-center space-x-3">
-        <button id="btnFault" onclick="triggerIncident(true)" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white text-xs font-bold rounded-lg shadow-lg shadow-rose-950/50 transition flex items-center space-x-2">
-          <span>🚨</span><span>Kích hoạt sự cố (Nghẹt ống & Tăng pH)</span>
+  <main class="relative z-10 max-w-6xl mx-auto px-4 md:px-6 py-6 space-y-5">
+    <!-- Auth fallback notification if domain or popup blocked -->
+    <div id="authNotice" class="hidden aqua-glass px-5 py-3 border-amber-300/90 flex flex-wrap items-center justify-between gap-3">
+      <div class="text-xs text-amber-950 font-medium" id="authNoticeText"></div>
+      <div class="flex items-center gap-2">
+        <button onclick="useDemoGoogleAccount()" class="gel-btn gel-aqua px-3.5 py-1.5 text-xs">
+          ✨ Dùng Hồ Sơ Demo Google
         </button>
-        <button id="btnResolve" onclick="triggerIncident(false)" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-bold rounded-lg shadow-lg shadow-emerald-950/50 transition flex items-center space-x-2">
-          <span>🛠️</span><span>Khắc phục tự động (Reverse Flush & pH Down)</span>
+        <button onclick="document.getElementById('authNotice').classList.add('hidden')" class="px-2.5 py-1 rounded-full text-xs font-bold bg-white/80 text-sky-900">
+          Đóng
         </button>
       </div>
     </div>
 
-    <!-- Hydroponic Racks Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <!-- Rack 1: Balcony Lettuce -->
-      <div id="card-rack1" class="bg-slate-900/80 rounded-xl p-5 border border-slate-800 transition duration-300 relative overflow-hidden shadow-lg">
-        <div class="flex justify-between items-start mb-3">
+    <!-- Backend API Bridge & Share Link Bar -->
+    <div class="aqua-glass px-5 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2 text-xs font-bold text-sky-950">
+        <span>🌐</span>
+        <span>Backend API (MongoDB + Datadog):</span>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 flex-1 max-w-2xl">
+        <input
+          id="apiBaseInput"
+          type="text"
+          placeholder="http://127.0.0.1:8000"
+          class="flex-1 min-w-[200px] px-3.5 py-1.5 rounded-full text-xs font-mono bg-white/85 border border-white text-sky-950 focus:outline-none focus:ring-2 focus:ring-cyan-400 shadow-inner"
+        />
+        <button onclick="saveApiBaseUrl()" class="gel-btn gel-aqua px-4 py-1.5 text-xs">
+          Kết nối API
+        </button>
+        <button onclick="copyShareLink()" class="gel-btn gel-gold px-4 py-1.5 text-xs">
+          🔗 Copy Link Chia Sẻ
+        </button>
+      </div>
+    </div>
+    <div id="shareBanner" class="hidden aqua-subcard px-4 py-2 text-xs font-semibold text-sky-900"></div>
+
+    <!-- Main Pure Control Center Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Left: Live Interactive Aquarium Tank -->
+      <div class="lg:col-span-5 aqua-glass p-5 flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-3">
           <div>
-            <span class="text-xs font-mono text-emerald-400">HYDROPONIC-RACK-01</span>
-            <h3 class="font-bold text-slate-100 flex items-center gap-1.5">
-              <span>🥬</span> Giàn Xà lách Ban công
-            </h3>
-            <p class="text-xs text-slate-400">Balcony 1F • NFT Vertical Tower</p>
+            <span id="visualizerSubtitle" class="text-[11px] font-mono font-bold text-sky-700 uppercase">AQUA-TANK-01</span>
+            <h2 id="visualizerTitle" class="text-base font-extrabold text-sky-950">🐠 Bể Thủy Sinh Frutiger Aqua</h2>
           </div>
-          <span id="badge-rack1" class="px-2.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-700">OPTIMAL</span>
+          <span id="bubblerPill" class="px-3 py-1 rounded-full text-[11px] font-bold bg-cyan-100/90 text-cyan-900 border border-white shadow-sm">
+            🫧 Sục khí: BẬT
+          </span>
         </div>
-        
-        <div class="grid grid-cols-2 gap-3 mt-4">
-          <!-- Flow Rate -->
-          <div class="bg-slate-950/70 p-3 rounded-lg border border-slate-800/80">
-            <span class="text-[11px] text-slate-400 uppercase font-medium">Lưu lượng bơm</span>
-            <div class="flex items-baseline space-x-1 mt-1">
-              <span id="val-flow" class="text-2xl font-bold font-mono text-cyan-400">4.5</span>
-              <span class="text-xs text-slate-400">LPM</span>
+
+        <div class="tank-viewport">
+          <div id="tankWater" class="tank-water" style="height: 88%;">
+            <div class="water-surface"></div>
+            <div class="fish-1">🐠</div>
+            <div class="fish-2">🐡</div>
+            <div class="fish-3">🐟</div>
+            <div id="tankBubblesContainer">
+              <div class="tank-bubble w-3 h-3 left-[15%]" style="animation-delay: 0.1s;"></div>
+              <div class="tank-bubble w-4 h-4 left-[28%]" style="animation-delay: 0.9s;"></div>
+              <div class="tank-bubble w-2.5 h-2.5 left-[55%]" style="animation-delay: 0.4s;"></div>
+              <div class="tank-bubble w-3.5 h-3.5 left-[78%]" style="animation-delay: 1.4s;"></div>
+              <div class="tank-bubble w-2 h-2 left-[86%]" style="animation-delay: 1.9s;"></div>
             </div>
-            <span id="status-flow" class="text-[10px] text-emerald-400 mt-1 block">Tuần hoàn tốt</span>
           </div>
 
-          <!-- pH -->
-          <div class="bg-slate-950/70 p-3 rounded-lg border border-slate-800/80">
-            <span class="text-[11px] text-slate-400 uppercase font-medium">Độ pH dinh dưỡng</span>
-            <div class="flex items-baseline space-x-1 mt-1">
-              <span id="val-ph" class="text-2xl font-bold font-mono text-emerald-400">6.1</span>
-              <span class="text-xs text-slate-400">pH</span>
-            </div>
-            <span id="status-ph" class="text-[10px] text-emerald-400 mt-1 block">Lý tưởng (5.8 - 6.5)</span>
+          <svg class="absolute bottom-0 left-0 right-0 w-full h-14 pointer-events-none" viewBox="0 0 400 60" preserveAspectRatio="none">
+            <path d="M0,60 L0,42 Q60,28 120,44 T240,40 T360,46 L400,40 L400,60 Z" fill="rgba(167, 243, 208, 0.72)"/>
+            <path d="M22,60 C18,40 30,28 24,14 C34,26 32,44 36,60 Z" fill="#22c55e"/>
+            <path d="M44,60 C48,42 38,30 46,18 C54,32 50,46 52,60 Z" fill="#10b981"/>
+            <path d="M342,60 C336,42 350,28 342,16 C356,28 354,44 358,60 Z" fill="#ec4899" opacity="0.85"/>
+            <path d="M366,60 C372,44 360,34 368,20 C378,34 374,46 378,60 Z" fill="#a855f7" opacity="0.8"/>
+          </svg>
+
+          <div class="absolute top-3 left-3 px-3 py-1 rounded-full bg-white/85 backdrop-blur text-[11px] font-mono font-bold text-sky-950 border border-white shadow">
+            Mực nước: <span id="tankWaterPctText">88%</span> • pH: <span id="tankPhText">6.15</span> • Bơm: <span id="tankFlowText">4.50</span> LPM
+          </div>
+          <div id="feedToast" class="hidden absolute top-3 right-3 px-3 py-1 rounded-full bg-amber-100/95 text-amber-900 text-[11px] font-bold border border-white shadow">
+            🍤 Đã thả thức ăn!
           </div>
         </div>
 
-        <div class="mt-4 grid grid-cols-3 gap-2 text-center text-[11px] pt-3 border-t border-slate-800">
-          <div>
-            <span class="text-slate-400 block">EC (ppm)</span>
-            <span id="val-ec" class="font-mono font-bold text-slate-200">960</span>
-          </div>
-          <div>
-            <span class="text-slate-400 block">Mực nước</span>
-            <span id="val-level" class="font-mono font-bold text-slate-200">88%</span>
-          </div>
-          <div>
-            <span class="text-slate-400 block">Nhiệt độ nước</span>
-            <span id="val-temp" class="font-mono font-bold text-slate-200">21.4°C</span>
-          </div>
+        <div class="mt-3 aqua-subcard px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold text-sky-900">
+          <span>Cho ăn gần nhất: <span id="lastFedText" class="font-mono font-bold">Chưa kích hoạt</span></span>
+          <span>Chế độ lọc: <span id="filterModeText" class="font-mono font-bold">NORMAL</span></span>
         </div>
       </div>
 
-      <!-- Rack 2: Rooftop Strawberries -->
-      <div class="bg-slate-900/80 rounded-xl p-5 border border-slate-800 relative overflow-hidden shadow-lg">
-        <div class="flex justify-between items-start mb-3">
-          <div>
-            <span class="text-xs font-mono text-emerald-400">HYDROPONIC-RACK-02</span>
-            <h3 class="font-bold text-slate-100 flex items-center gap-1.5">
-              <span>🍓</span> Giàn Dâu tây Sân thượng
-            </h3>
-            <p class="text-xs text-slate-400">Rooftop 3F • Drip Hydroponics</p>
-          </div>
-          <span class="px-2.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-700">OPTIMAL</span>
+      <!-- Right: Pure Control Deck -->
+      <div class="lg:col-span-7 aqua-glass p-6 flex flex-col justify-between gap-4">
+        <div>
+          <span class="text-xs font-extrabold uppercase tracking-wider text-sky-700 flex items-center gap-1.5">
+            <span>🎮</span> Aquarium Actuator &amp; Incident Remote Control
+          </span>
+          <h2 class="text-xl font-extrabold text-sky-950 mt-1">
+            Chọn Bể &amp; Gửi Lệnh Điều Khiển Trực Tiếp
+          </h2>
+          <p class="text-xs text-sky-900/85 mt-1 leading-relaxed">
+            Trang này tập trung hoàn toàn vào <strong>thao tác điều khiển</strong> (gắn định danh tài khoản Google đang đăng nhập). Toàn bộ biểu đồ, chuỗi thời gian MongoDB và Datadog Logs được tách riêng sang trang <strong>Dữ liệu &amp; Biểu đồ</strong>.
+          </p>
         </div>
-        <div class="grid grid-cols-2 gap-3 mt-4">
-          <div class="bg-slate-950/70 p-3 rounded-lg border border-slate-800/80">
-            <span class="text-[11px] text-slate-400 uppercase font-medium">Lưu lượng bơm</span>
-            <div class="flex items-baseline space-x-1 mt-1">
-              <span class="text-2xl font-bold font-mono text-cyan-400">4.2</span>
-              <span class="text-xs text-slate-400">LPM</span>
-            </div>
-            <span class="text-[10px] text-emerald-400 mt-1 block">Tuần hoàn tốt</span>
-          </div>
-          <div class="bg-slate-950/70 p-3 rounded-lg border border-slate-800/80">
-            <span class="text-[11px] text-slate-400 uppercase font-medium">Độ pH</span>
-            <div class="flex items-baseline space-x-1 mt-1">
-              <span class="text-2xl font-bold font-mono text-emerald-400">5.9</span>
-              <span class="text-xs text-slate-400">pH</span>
-            </div>
-            <span class="text-[10px] text-emerald-400 mt-1 block">Lý tưởng</span>
-          </div>
-        </div>
-        <div class="mt-4 grid grid-cols-3 gap-2 text-center text-[11px] pt-3 border-t border-slate-800">
-          <div><span class="text-slate-400 block">EC (ppm)</span><span class="font-mono font-bold text-slate-200">1120</span></div>
-          <div><span class="text-slate-400 block">Mực nước</span><span class="font-mono font-bold text-slate-200">92%</span></div>
-          <div><span class="text-slate-400 block">Nhiệt độ nước</span><span class="font-mono font-bold text-slate-200">20.8°C</span></div>
-        </div>
-      </div>
 
-      <!-- Rack 3: Kitchen Microgreens -->
-      <div class="bg-slate-900/80 rounded-xl p-5 border border-slate-800 relative overflow-hidden shadow-lg">
-        <div class="flex justify-between items-start mb-3">
+        <!-- Tank Selector Tabs -->
+        <div>
+          <label class="text-[11px] font-bold text-sky-900 uppercase tracking-wide block mb-2">
+            1. Chọn bể cá mục tiêu:
+          </label>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <button id="tab-AQUA-TANK-01" onclick="selectTank('AQUA-TANK-01')" class="rack-tab active px-3 py-2 text-left">
+              <div class="text-[10px] font-mono opacity-80">TANK-01</div>
+              <div class="text-xs font-extrabold">🐠 Thủy Sinh</div>
+            </button>
+            <button id="tab-AQUA-TANK-02" onclick="selectTank('AQUA-TANK-02')" class="rack-tab px-3 py-2 text-left">
+              <div class="text-[10px] font-mono opacity-80">TANK-02</div>
+              <div class="text-xs font-extrabold">🪸 San Hô Reef</div>
+            </button>
+            <button id="tab-AQUA-TANK-03" onclick="selectTank('AQUA-TANK-03')" class="rack-tab px-3 py-2 text-left">
+              <div class="text-[10px] font-mono opacity-80">TANK-03</div>
+              <div class="text-xs font-extrabold">🌿 Cá Koi Mini</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 Glossy Gel Action Buttons -->
+        <div>
+          <label class="text-[11px] font-bold text-sky-900 uppercase tracking-wide block mb-2">
+            2. Thao tác thiết bị &amp; sự cố:
+          </label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button id="btnFault" onclick="injectFault()" class="gel-btn gel-coral px-5 py-3.5 text-xs md:text-sm flex items-center justify-center gap-2">
+              <span>🚨</span><span>Gây Sự Cố (Nghẹt Lọc &amp; Sốc pH)</span>
+            </button>
+            <button id="btnResolve" onclick="resolveFault()" class="gel-btn gel-lime px-5 py-3.5 text-xs md:text-sm flex items-center justify-center gap-2">
+              <span>🛠️</span><span>Xả Ngược &amp; Cân Bằng pH</span>
+            </button>
+            <button id="btnBubbler" onclick="toggleBubbler()" class="gel-btn gel-aqua px-5 py-3 text-xs md:text-sm flex items-center justify-center gap-2">
+              <span>🫧</span><span>Bật / Tắt Sục Khí Oxy</span>
+            </button>
+            <button id="btnFeed" onclick="feedFish()" class="gel-btn gel-gold px-5 py-3 text-xs md:text-sm flex items-center justify-center gap-2">
+              <span>🐠</span><span>Cho Cá Ăn Tự Động</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Built-in Web Telemetry Streamer + Go to Data Page -->
+        <div class="aqua-subcard p-3.5 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <span class="text-xs font-mono text-emerald-400">HYDROPONIC-RACK-03</span>
-            <h3 class="font-bold text-slate-100 flex items-center gap-1.5">
-              <span>🌿</span> Giàn Rau mầm Bếp
-            </h3>
-            <p class="text-xs text-slate-400">Indoor Kitchen • Aeroponics Rack</p>
-          </div>
-          <span class="px-2.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-700">OPTIMAL</span>
-        </div>
-        <div class="grid grid-cols-2 gap-3 mt-4">
-          <div class="bg-slate-950/70 p-3 rounded-lg border border-slate-800/80">
-            <span class="text-[11px] text-slate-400 uppercase font-medium">Lưu lượng bơm</span>
-            <div class="flex items-baseline space-x-1 mt-1">
-              <span class="text-2xl font-bold font-mono text-cyan-400">3.8</span>
-              <span class="text-xs text-slate-400">LPM</span>
+            <div class="text-xs font-extrabold text-sky-950 flex items-center gap-1.5">
+              <span>📡</span><span>Web Telemetry Streamer (Bơm dữ liệu mỗi 2s)</span>
             </div>
-            <span class="text-[10px] text-emerald-400 mt-1 block">Tuần hoàn tốt</span>
-          </div>
-          <div class="bg-slate-950/70 p-3 rounded-lg border border-slate-800/80">
-            <span class="text-[11px] text-slate-400 uppercase font-medium">Độ pH</span>
-            <div class="flex items-baseline space-x-1 mt-1">
-              <span class="text-2xl font-bold font-mono text-emerald-400">6.2</span>
-              <span class="text-xs text-slate-400">pH</span>
+            <div id="streamerStatus" class="text-[11px] text-sky-800 mt-0.5">
+              Đang tắt (bật nếu muốn test ngay không cần terminal Simulator)
             </div>
-            <span class="text-[10px] text-emerald-400 mt-1 block">Lý tưởng</span>
           </div>
-        </div>
-        <div class="mt-4 grid grid-cols-3 gap-2 text-center text-[11px] pt-3 border-t border-slate-800">
-          <div><span class="text-slate-400 block">EC (ppm)</span><span class="font-mono font-bold text-slate-200">850</span></div>
-          <div><span class="text-slate-400 block">Mực nước</span><span class="font-mono font-bold text-slate-200">80%</span></div>
-          <div><span class="text-slate-400 block">Nhiệt độ nước</span><span class="font-mono font-bold text-slate-200">22.1°C</span></div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="btnToggleStream" onclick="toggleWebStreamer()" class="gel-btn gel-aqua px-4 py-2 text-xs">
+              ▶️ Bật Stream từ Web
+            </button>
+            <a href="/data.html" class="gel-btn gel-indigo px-4 py-2 text-xs">
+              📊 Xem Dữ Liệu MongoDB →
+            </a>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Chart & Logs Row -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div class="lg:col-span-2 bg-slate-900/80 rounded-xl p-5 border border-slate-800">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="font-semibold text-sm text-slate-200 flex items-center gap-2">
-            <span>📈</span> Real-time Flow Rate (LPM) & Nutrient pH Telemetry
-          </h3>
-          <span class="text-xs text-emerald-400 font-mono">MongoDB Time Series Stream</span>
+    <!-- Compact Control Audit Trail -->
+    <div class="aqua-glass p-5">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <div>
+          <h3 class="text-sm font-extrabold text-sky-950">📜 Nhật Ký Thao Tác Điều Khiển Gần Nhất</h3>
+          <p class="text-[11px] text-sky-800/80">Ghi nhận người thao tác (Google Account), thiết bị và phản hồi từ hệ thống.</p>
         </div>
-        <div class="h-64">
-          <canvas id="farmChart"></canvas>
-        </div>
+        <button onclick="clearControlLog()" class="px-3 py-1 rounded-full text-[11px] font-bold bg-white/80 hover:bg-white text-sky-800 border border-white">
+          Xóa log màn hình
+        </button>
       </div>
-
-      <div class="bg-slate-900/80 rounded-xl p-5 border border-slate-800 flex flex-col">
-        <h3 class="font-semibold text-sm text-slate-200 mb-3 flex items-center gap-2">
-          <span>🔔</span> Farm Operations & Incident Audit Log
-        </h3>
-        <div id="logStream" class="flex-1 overflow-y-auto space-y-2 font-mono text-xs max-h-64 pr-1">
-          <div class="p-2 bg-slate-950 rounded border border-slate-800/80 text-slate-400">
-            [SYS] Gateway thu thập dữ liệu nông nghiệp đã kết nối MongoDB Atlas & Datadog.
-          </div>
-        </div>
+      <div id="controlLogList" class="space-y-2 max-h-48 overflow-y-auto pr-1 text-xs font-mono">
+        <div class="aqua-subcard p-2.5 text-sky-800">Hệ thống điều khiển đã sẵn sàng. Hãy chọn bể và bấm nút thao tác ở trên.</div>
       </div>
     </div>
   </main>
 
-  <script>
-    // Initialize Chart
-    const ctx = document.getElementById('farmChart').getContext('2d');
-    const maxDataPoints = 25;
-    const labels = [];
-    const flowData = [];
-    const phData = [];
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js';
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signOut,
+      onAuthStateChanged
+    } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js';
 
-    const chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [
-          {
-            label: 'Lưu lượng bơm (LPM)',
-            borderColor: '#38bdf8', // Cyan
-            backgroundColor: 'rgba(56, 189, 248, 0.1)',
-            data: flowData,
-            yAxisID: 'yFlow',
-            tension: 0.3,
-            fill: true
-          },
-          {
-            label: 'Độ pH dung dịch',
-            borderColor: '#34d399', // Emerald
-            data: phData,
-            yAxisID: 'yPh',
-            tension: 0.3
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-          yFlow: {
-            type: 'linear',
-            position: 'left',
-            min: 0,
-            max: 6,
-            grid: { color: 'rgba(255,255,255,0.05)' },
-            ticks: { color: '#38bdf8' },
-            title: { display: true, text: 'Flow (LPM)', color: '#38bdf8' }
-          },
-          yPh: {
-            type: 'linear',
-            position: 'right',
-            min: 4,
-            max: 10,
-            grid: { drawOnChartArea: false },
-            ticks: { color: '#34d399' },
-            title: { display: true, text: 'pH Level', color: '#34d399' }
-          }
+    const firebaseConfig = {
+      apiKey: localStorage.getItem('FIREBASE_WEB_API_KEY') || "YOUR_FIREBASE_WEB_API_KEY",
+      authDomain: "smart-aquarium-mug-2026.firebaseapp.com",
+      projectId: "smart-aquarium-mug-2026",
+      storageBucket: "smart-aquarium-mug-2026.firebasestorage.app",
+      messagingSenderId: "979674409009",
+      appId: "1:979674409009:web:ce2ac3c1e261c932628d10"
+    };
+
+    let fbApp = null, fbAuth = null, googleProvider = null;
+    try {
+      fbApp = initializeApp(firebaseConfig);
+      fbAuth = getAuth(fbApp);
+      googleProvider = new GoogleAuthProvider();
+    } catch (_) {}
+
+    function applyUserUI(user) {
+      window.currentUser = user;
+      const loggedOutEl = document.getElementById('authLoggedOut');
+      const loggedInEl = document.getElementById('authLoggedIn');
+      if (user) {
+        loggedOutEl.classList.add('hidden');
+        loggedInEl.classList.remove('hidden');
+        loggedInEl.classList.add('flex');
+        document.getElementById('userName').innerText = user.displayName || 'Aquarium Operator';
+        document.getElementById('userEmail').innerText = user.email || (user.isDemo ? 'demo-operator@gmail.com' : 'verified-user');
+        const avatarEl = document.getElementById('userAvatar');
+        const fallbackEl = document.getElementById('userAvatarFallback');
+        if (user.photoURL) {
+          avatarEl.src = user.photoURL;
+          avatarEl.classList.remove('hidden');
+          fallbackEl.classList.add('hidden');
+        } else {
+          avatarEl.classList.add('hidden');
+          fallbackEl.classList.remove('hidden');
+          fallbackEl.innerText = (user.displayName || 'G')[0].toUpperCase();
+        }
+        document.getElementById('authNotice').classList.add('hidden');
+      } else {
+        loggedOutEl.classList.remove('hidden');
+        loggedInEl.classList.add('hidden');
+        loggedInEl.classList.remove('flex');
+      }
+    }
+
+    if (!fbAuth || firebaseConfig.apiKey === "YOUR_FIREBASE_WEB_API_KEY") {
+      const savedDemo = localStorage.getItem('DEMO_GOOGLE_USER');
+      applyUserUI(savedDemo ? JSON.parse(savedDemo) : null);
+    } else {
+      onAuthStateChanged(fbAuth, (firebaseUser) => {
+        if (firebaseUser) {
+          localStorage.removeItem('DEMO_GOOGLE_USER');
+          applyUserUI(firebaseUser);
+        } else {
+          const savedDemo = localStorage.getItem('DEMO_GOOGLE_USER');
+          applyUserUI(savedDemo ? JSON.parse(savedDemo) : null);
+        }
+      });
+    }
+
+    window.signInWithGoogle = async function () {
+      try {
+        await signInWithPopup(fbAuth, googleProvider);
+      } catch (err) {
+        const notice = document.getElementById('authNotice');
+        const text = document.getElementById('authNoticeText');
+        notice.classList.remove('hidden');
+        text.innerText = `⚠️ Không mở được Google Sign-In popup (${err.code || err.message}). Nếu bạn đang chạy trên domain chưa authorize hoặc bị chặn popup, bạn có thể bấm nút bên cạnh để đăng nhập nhanh bằng Hồ sơ Demo Google.`;
+      }
+    };
+
+    window.useDemoGoogleAccount = function () {
+      const demo = {
+        displayName: 'Hackathon Guest (Google)',
+        email: 'operator@smart-aquarium.demo',
+        photoURL: '',
+        isDemo: true
+      };
+      localStorage.setItem('DEMO_GOOGLE_USER', JSON.stringify(demo));
+      applyUserUI(demo);
+    };
+
+    window.signOutUser = async function () {
+      localStorage.removeItem('DEMO_GOOGLE_USER');
+      try { await signOut(fbAuth); } catch (_) {}
+      applyUserUI(null);
+    };
+  </script>
+
+  <script>
+    const TANKS = {
+      'AQUA-TANK-01': { name: 'Bể Thủy Sinh Frutiger Aqua', zone: 'Living Room 1F', crop: 'Neon Tetra & Guppy', system: 'Canister Bio-Filter' },
+      'AQUA-TANK-02': { name: 'Bể San Hô Reef Glow', zone: 'Studio 2F', crop: 'Clownfish & Coral', system: 'Sump Protein Skimmer' },
+      'AQUA-TANK-03': { name: 'Bể Cá Koi & Thủy Canh Mini', zone: 'Balcony Lounge', crop: 'Mini Koi & Moss', system: 'Overflow UV Filter' }
+    };
+
+    const STANDALONE_KEY = 'AQUARIUM_STANDALONE_STATE_V2';
+    let selectedTankId = localStorage.getItem('SELECTED_TANK_ID') || 'AQUA-TANK-01';
+    let isStandaloneMode = false;
+    let streamerTimer = null;
+
+    function resolveDefaultApiBase() {
+      const params = new URLSearchParams(window.location.search);
+      const paramApi = params.get('api');
+      if (paramApi) {
+        const clean = paramApi.trim().replace(/\/+$/, '');
+        localStorage.setItem('API_BASE_URL', clean);
+        return clean;
+      }
+      const saved = localStorage.getItem('API_BASE_URL');
+      if (saved) return saved.replace(/\/+$/, '');
+      const loc = window.location;
+      if (loc.protocol.startsWith('http') && !loc.hostname.endsWith('web.app') && !loc.hostname.endsWith('firebaseapp.com') && loc.port !== '5000') {
+        return loc.origin;
+      }
+      return 'http://127.0.0.1:8000';
+    }
+
+    let API_BASE = resolveDefaultApiBase();
+    document.getElementById('apiBaseInput').value = API_BASE;
+    document.getElementById('swaggerLink').href = `${API_BASE}/docs`;
+
+    function apiUrl(path) { return `${API_BASE}${path}`; }
+
+    function operatorLabel() {
+      if (window.currentUser) {
+        return `${window.currentUser.displayName || 'User'} <${window.currentUser.email || 'google'}>`;
+      }
+      return 'Khách vãng lai (Guest)';
+    }
+
+    async function fetchWithTimeout(url, options = {}, ms = 3200) {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), ms);
+      try {
+        return await fetch(url, { ...options, signal: controller.signal });
+      } finally {
+        clearTimeout(id);
+      }
+    }
+
+    function getStandaloneState() {
+      const raw = localStorage.getItem(STANDALONE_KEY);
+      if (raw) {
+        try { return JSON.parse(raw); } catch (_) {}
+      }
+      const nowIso = new Date().toISOString();
+      const initial = {
+        faults: {},
+        actuators: { bubbler_on: true, last_fed_at: null, filter_mode: 'NORMAL' },
+        racks: {
+          'AQUA-TANK-01': { ts: nowIso, sensor: { id: 'AQUA-TANK-01', zone: 'Living Room 1F', crop: 'Neon Tetra & Guppy', system_type: 'Canister Bio-Filter' }, ph: 6.12, ec_ppm: 940, water_temp: 25.2, water_level_pct: 89, pump_flow_lpm: 4.55 },
+          'AQUA-TANK-02': { ts: nowIso, sensor: { id: 'AQUA-TANK-02', zone: 'Studio 2F', crop: 'Clownfish & Coral', system_type: 'Sump Protein Skimmer' }, ph: 6.25, ec_ppm: 1020, water_temp: 25.8, water_level_pct: 86, pump_flow_lpm: 4.20 },
+          'AQUA-TANK-03': { ts: nowIso, sensor: { id: 'AQUA-TANK-03', zone: 'Balcony Lounge', crop: 'Mini Koi & Moss', system_type: 'Overflow UV Filter' }, ph: 6.08, ec_ppm: 890, water_temp: 24.9, water_level_pct: 91, pump_flow_lpm: 4.75 }
         },
-        plugins: {
-          legend: { labels: { color: '#cbd5e1', font: { size: 11 } } }
+        history: [],
+        incidents: []
+      };
+      localStorage.setItem(STANDALONE_KEY, JSON.stringify(initial));
+      return initial;
+    }
+
+    function saveStandaloneState(state) {
+      localStorage.setItem(STANDALONE_KEY, JSON.stringify(state));
+    }
+
+    function selectTank(tankId) {
+      selectedTankId = tankId;
+      localStorage.setItem('SELECTED_TANK_ID', tankId);
+      for (const id of Object.keys(TANKS)) {
+        const el = document.getElementById(`tab-${id}`);
+        if (el) el.classList.toggle('active', id === tankId);
+      }
+      const info = TANKS[tankId];
+      document.getElementById('visualizerSubtitle').innerText = tankId;
+      document.getElementById('visualizerTitle').innerText = `🐠 ${info.name}`;
+      refreshControlState();
+    }
+
+    function appendControlLog(msg, isAlert = false) {
+      const list = document.getElementById('controlLogList');
+      if (list.children.length === 1 && list.children[0].innerText.includes('Hệ thống điều khiển đã sẵn sàng')) {
+        list.innerHTML = '';
+      }
+      const row = document.createElement('div');
+      const ts = new Date().toLocaleTimeString('vi-VN');
+      row.className = isAlert
+        ? 'p-2.5 rounded-xl bg-rose-100/90 border border-rose-300 text-rose-950'
+        : 'aqua-subcard p-2.5 text-sky-950';
+      row.innerHTML = `<div class="flex justify-between gap-2"><span class="font-bold">${escapeHtml(msg)}</span><span class="opacity-70 shrink-0">${ts}</span></div><div class="text-[10px] text-sky-700 mt-0.5">Người điều khiển: ${escapeHtml(operatorLabel())} • Chế độ: ${isStandaloneMode ? 'Cloud Demo (Offline Bridge)' : 'Live MongoDB + Datadog'}</div>`;
+      list.prepend(row);
+      while (list.children.length > 15) list.removeChild(list.lastChild);
+    }
+
+    function clearControlLog() {
+      document.getElementById('controlLogList').innerHTML = '<div class="aqua-subcard p-2.5 text-sky-800">Đã xóa log màn hình.</div>';
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    async function saveApiBaseUrl() {
+      const raw = document.getElementById('apiBaseInput').value.trim().replace(/\/+$/, '');
+      if (!raw) return;
+      API_BASE = raw;
+      localStorage.setItem('API_BASE_URL', API_BASE);
+      document.getElementById('swaggerLink').href = `${API_BASE}/docs`;
+      await refreshControlState();
+    }
+
+    async function copyShareLink() {
+      const basePage = `${window.location.origin}/`;
+      const isLocal = API_BASE.includes('127.0.0.1') || API_BASE.includes('localhost');
+      const shareUrl = isLocal ? basePage : `${basePage}?api=${encodeURIComponent(API_BASE)}`;
+      try { await navigator.clipboard.writeText(shareUrl); } catch (_) {}
+      const banner = document.getElementById('shareBanner');
+      banner.classList.remove('hidden');
+      banner.innerHTML = isLocal
+        ? `✅ Đã copy link công khai: <code class="font-mono bg-white/80 px-1.5 py-0.5 rounded">${escapeHtml(shareUrl)}</code> (Người khác mở sẽ tự chạy chế độ Cloud Demo tương tác; muốn điều khiển MongoDB thật trên máy bạn từ xa hãy chạy <code class="font-mono">scripts/share_public_backend.ps1</code> rồi dán link HTTPS vào ô API).`
+        : `✅ Đã copy link kèm Backend Live: <code class="font-mono bg-white/80 px-1.5 py-0.5 rounded">${escapeHtml(shareUrl)}</code> — bất kỳ ai mở link đều điều khiển được hệ thống thật!`;
+    }
+
+    async function sendControl(action, reason) {
+      const taggedReason = `${reason} [by ${operatorLabel()}]`;
+      try {
+        const res = await fetchWithTimeout(apiUrl('/api/simulator/control'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ device_id: selectedTankId, action, reason: taggedReason })
+        });
+        if (res.ok) {
+          isStandaloneMode = false;
+          return await res.json();
+        }
+      } catch (_) {}
+
+      // Cloud Standalone Fallback
+      isStandaloneMode = true;
+      const st = getStandaloneState();
+      const nowIso = new Date().toISOString();
+      if (action === 'INJECT_FAULT') {
+        st.faults[selectedTankId] = 'CLOG_AND_PH_DRIFT';
+        st.actuators.filter_mode = 'FAULT_CLOGGED';
+        st.racks[selectedTankId].pump_flow_lpm = 0.38;
+        st.racks[selectedTankId].ph = 8.18;
+        st.racks[selectedTankId].water_level_pct = 32;
+        st.racks[selectedTankId].ts = nowIso;
+        st.incidents.unshift({
+          device_id: selectedTankId,
+          status: 'ACTIVE',
+          alert_type: `HIGH_PH_CLOGGING (${taggedReason})`,
+          detected_at: nowIso
+        });
+      } else if (action === 'TOGGLE_BUBBLER') {
+        st.actuators.bubbler_on = !st.actuators.bubbler_on;
+      } else if (action === 'FEED_FISH') {
+        st.actuators.last_fed_at = nowIso;
+      }
+      st.history.push({ ts: nowIso, ...st.racks[selectedTankId] });
+      if (st.history.length > 30) st.history = st.history.slice(-30);
+      saveStandaloneState(st);
+      return { status: 'ok', faults: st.faults, actuators: st.actuators };
+    }
+
+    async function injectFault() {
+      const btn = document.getElementById('btnFault');
+      btn.disabled = true;
+      try {
+        await sendControl('INJECT_FAULT', `Gây sự cố tắc lọc & kiềm hóa pH trên ${selectedTankId}`);
+        appendControlLog(`🚨 INJECT_FAULT → ${selectedTankId}`, true);
+        await refreshControlState();
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function resolveFault() {
+      const btn = document.getElementById('btnResolve');
+      btn.disabled = true;
+      const notes = `Xả ngược lọc & cân bằng pH trên ${selectedTankId} [by ${operatorLabel()}]`;
+      try {
+        let handledLive = false;
+        try {
+          const res = await fetchWithTimeout(apiUrl('/api/incident/respond'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              device_id: selectedTankId,
+              action: 'REVERSE_FLUSH_AND_DOSING_PH_DOWN',
+              notes
+            })
+          });
+          if (res.ok) {
+            handledLive = true;
+            isStandaloneMode = false;
+          }
+        } catch (_) {}
+        if (!handledLive) {
+          isStandaloneMode = true;
+          const st = getStandaloneState();
+          const now = Date.now();
+          const nowIso = new Date(now).toISOString();
+          delete st.faults[selectedTankId];
+          st.actuators.filter_mode = Object.keys(st.faults).length ? 'FAULT_CLOGGED' : 'NORMAL';
+          st.racks[selectedTankId].pump_flow_lpm = 4.62;
+          st.racks[selectedTankId].ph = 6.14;
+          st.racks[selectedTankId].water_level_pct = 89;
+          st.racks[selectedTankId].ts = nowIso;
+          for (const inc of st.incidents) {
+            if (inc.device_id === selectedTankId && inc.status === 'ACTIVE') {
+              inc.status = 'RESOLVED';
+              inc.action = `REVERSE_FLUSH_AND_DOSING_PH_DOWN (${notes})`;
+              inc.resolved_at = nowIso;
+              inc.mttr_seconds = Number(((now - new Date(inc.detected_at).getTime()) / 1000).toFixed(2));
+            }
+          }
+          st.history.push({ ts: nowIso, ...st.racks[selectedTankId] });
+          saveStandaloneState(st);
+        }
+        appendControlLog(`🛠️ RESOLVE → ${selectedTankId} (Đã xả ngược & cân bằng pH)`);
+        await refreshControlState();
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function toggleBubbler() {
+      const btn = document.getElementById('btnBubbler');
+      btn.disabled = true;
+      try {
+        const res = await sendControl('TOGGLE_BUBBLER', `Bật/tắt sục khí oxy trên ${selectedTankId}`);
+        const on = res?.actuators?.bubbler_on !== false;
+        appendControlLog(`🫧 TOGGLE_BUBBLER → ${on ? 'BẬT' : 'TẮT'}`);
+        await refreshControlState();
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function feedFish() {
+      const btn = document.getElementById('btnFeed');
+      btn.disabled = true;
+      try {
+        await sendControl('FEED_FISH', `Cho cá ăn tự động trên ${selectedTankId}`);
+        const toast = document.getElementById('feedToast');
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 3000);
+        appendControlLog(`🐠 FEED_FISH → Đã thả thức ăn cho ${selectedTankId}`);
+        await refreshControlState();
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function pushWebTelemetryOnce() {
+      const nowIso = new Date().toISOString();
+      if (isStandaloneMode) {
+        const st = getStandaloneState();
+        for (const id of Object.keys(TANKS)) {
+          const faulty = Boolean(st.faults[id]);
+          const r = {
+            ts: nowIso,
+            sensor: { id, zone: TANKS[id].zone, crop: TANKS[id].crop, system_type: TANKS[id].system },
+            ph: Number((faulty ? 8.1 + Math.random() * 0.25 : 6.05 + Math.random() * 0.25).toFixed(2)),
+            ec_ppm: Math.round(faulty ? 710 + Math.random() * 40 : 920 + Math.random() * 60),
+            water_temp: Number((24.8 + Math.random() * 0.8).toFixed(1)),
+            water_level_pct: Number((faulty ? 30 + Math.random() * 5 : 86 + Math.random() * 6).toFixed(1)),
+            pump_flow_lpm: Number((faulty ? 0.35 + Math.random() * 0.2 : 4.3 + Math.random() * 0.5).toFixed(2))
+          };
+          st.racks[id] = r;
+          if (id === selectedTankId) st.history.push(r);
+        }
+        if (st.history.length > 30) st.history = st.history.slice(-30);
+        saveStandaloneState(st);
+        await refreshControlState();
+        return;
+      }
+
+      try {
+        const stateRes = await fetchWithTimeout(apiUrl('/api/simulator/state'));
+        const simState = stateRes.ok ? await stateRes.json() : { faults: {} };
+        const faults = simState.faults || {};
+        const readings = Object.keys(TANKS).map((id) => {
+          const faulty = Boolean(faults[id]);
+          return {
+            ts: nowIso,
+            sensor: { id, zone: TANKS[id].zone, crop: TANKS[id].crop, system_type: TANKS[id].system },
+            ph: Number((faulty ? 8.15 + Math.random() * 0.2 : 6.08 + Math.random() * 0.22).toFixed(2)),
+            ec_ppm: Math.round(faulty ? 720 + Math.random() * 40 : 940 + Math.random() * 50),
+            water_temp: Number((24.9 + Math.random() * 0.7).toFixed(1)),
+            water_level_pct: Number((faulty ? 29 + Math.random() * 5 : 87 + Math.random() * 5).toFixed(1)),
+            pump_flow_lpm: Number((faulty ? 0.35 + Math.random() * 0.2 : 4.4 + Math.random() * 0.45).toFixed(2))
+          };
+        });
+        await fetchWithTimeout(apiUrl('/api/telemetry/ingest'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ readings })
+        });
+        await refreshControlState();
+      } catch (_) {}
+    }
+
+    function toggleWebStreamer() {
+      const btn = document.getElementById('btnToggleStream');
+      const statusEl = document.getElementById('streamerStatus');
+      if (streamerTimer) {
+        clearInterval(streamerTimer);
+        streamerTimer = null;
+        btn.className = 'gel-btn gel-aqua px-4 py-2 text-xs';
+        btn.innerText = '▶️ Bật Stream từ Web';
+        statusEl.innerText = 'Đã dừng Web Telemetry Streamer.';
+        appendControlLog('⏹️ Đã dừng Web Telemetry Streamer');
+      } else {
+        pushWebTelemetryOnce();
+        streamerTimer = setInterval(pushWebTelemetryOnce, 2000);
+        btn.className = 'gel-btn gel-coral px-4 py-2 text-xs';
+        btn.innerText = '⏹️ Dừng Stream Web';
+        statusEl.innerText = 'Đang bơm dữ liệu 3 bể mỗi 2s vào MongoDB + Datadog!';
+        appendControlLog('📡 Đã bật Web Telemetry Streamer (2s/nhịp)');
+      }
+    }
+
+    function renderTankVisualizer(reading, actuators, faults) {
+      const hasFault = Boolean((faults || {})[selectedTankId]);
+      const flow = reading ? Number(reading.pump_flow_lpm) : (hasFault ? 0.4 : 4.5);
+      const ph = reading ? Number(reading.ph) : (hasFault ? 8.15 : 6.15);
+      const rawLvl = reading ? Number(reading.water_level_pct) : (hasFault ? 32 : 88);
+      const lvl = Math.max(20, Math.min(96, rawLvl));
+
+      const waterEl = document.getElementById('tankWater');
+      waterEl.style.height = `${lvl}%`;
+      const isCritical = hasFault || flow < 1.0 || ph > 7.6 || ph < 5.0;
+      waterEl.classList.toggle('critical', isCritical);
+
+      document.getElementById('tankWaterPctText').innerText = `${Math.round(rawLvl)}%`;
+      document.getElementById('tankPhText').innerText = ph.toFixed(2);
+      document.getElementById('tankFlowText').innerText = flow.toFixed(2);
+
+      const sysEl = document.getElementById('sysStatus');
+      if (isCritical) {
+        sysEl.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-rose-500 text-white border border-white shadow-sm pulse-danger';
+        sysEl.innerHTML = '<span class="w-2 h-2 mr-2 rounded-full bg-white animate-ping"></span> CẢNH BÁO SỰ CỐ';
+      } else {
+        sysEl.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100/90 text-emerald-800 border border-white shadow-sm';
+        sysEl.innerHTML = '<span class="w-2 h-2 mr-2 rounded-full bg-emerald-500 animate-pulse"></span> HỆ THỐNG ỔN ĐỊNH';
+      }
+
+      if (actuators) {
+        const bubblerOn = actuators.bubbler_on !== false;
+        const bubblerPill = document.getElementById('bubblerPill');
+        bubblerPill.innerText = bubblerOn ? '🫧 Sục khí: BẬT' : '🫧 Sục khí: TẮT';
+        bubblerPill.className = bubblerOn
+          ? 'px-3 py-1 rounded-full text-[11px] font-bold bg-cyan-100/90 text-cyan-900 border border-white shadow-sm'
+          : 'px-3 py-1 rounded-full text-[11px] font-bold bg-slate-200/90 text-slate-700 border border-white shadow-sm';
+        document.getElementById('tankBubblesContainer').style.opacity = bubblerOn ? '1' : '0.15';
+        document.getElementById('filterModeText').innerText = actuators.filter_mode || 'NORMAL';
+        if (actuators.last_fed_at) {
+          document.getElementById('lastFedText').innerText = new Date(actuators.last_fed_at).toLocaleTimeString('vi-VN');
         }
       }
-    });
-
-    let isFaultActive = false;
-    let currFlow = 4.5;
-    let currPh = 6.1;
-    let currLevel = 88;
-
-    async function triggerIncident(isFault) {
-      isFaultActive = isFault;
-      const res = await fetch('/api/incident/respond', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          device_id: 'HYDROPONIC-RACK-01',
-          action: isFault ? 'SIMULATE_PIPE_CLOG' : 'REVERSE_FLUSH_AND_PH_DOWN',
-          notes: isFault ? 'Giả lập nghẹt cặn rễ cây' : 'Kích hoạt xả ngược & bơm pH-Down'
-        })
-      });
-      const data = await res.json();
-      addLog(isFault ? '🚨 [SỰ CỐ] Giàn xà lách bị nghẹt ống! Lưu lượng sụt giảm, pH kiềm hóa!' : '✅ [KHẮC PHỤC] Đã xả ngược đường ống và châm dung dịch cân bằng pH!');
     }
 
-    function addLog(msg) {
-      const stream = document.getElementById('logStream');
-      const item = document.createElement('div');
-      item.className = `p-2 rounded border text-[11px] ${msg.includes('SỰ CỐ') ? 'bg-rose-950/70 border-rose-700 text-rose-200 pulse-danger' : 'bg-slate-950 border-slate-800 text-emerald-300'}`;
-      item.innerHTML = `<span class="text-slate-500">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
-      stream.insertBefore(item, stream.firstChild);
+    async function refreshControlState() {
+      const modeBadge = document.getElementById('modeBadge');
+      try {
+        const [healthRes, simRes, latestRes] = await Promise.all([
+          fetchWithTimeout(apiUrl('/health')),
+          fetchWithTimeout(apiUrl('/api/simulator/state')),
+          fetchWithTimeout(apiUrl('/api/telemetry/latest?minutes=120'))
+        ]);
+        if (!healthRes.ok) throw new Error('API unhealthy');
+        isStandaloneMode = false;
+        const h = await healthRes.json();
+        modeBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100/90 text-emerald-800 border border-white shadow-sm';
+        modeBadge.innerText = `Live: MongoDB (${h.database?.status === 'connected' ? 'OK' : 'Err'})`;
+
+        const sim = simRes.ok ? await simRes.json() : {};
+        const latest = latestRes.ok ? await latestRes.json() : {};
+        const reading = (latest.racks || []).find(r => r.sensor?.id === selectedTankId) || null;
+        renderTankVisualizer(reading, sim.actuators || latest.actuators, sim.faults || {});
+      } catch (_) {
+        isStandaloneMode = true;
+        modeBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100/90 text-amber-900 border border-white shadow-sm';
+        modeBadge.innerText = 'Cloud Demo Mode';
+        const st = getStandaloneState();
+        renderTankVisualizer(st.racks[selectedTankId], st.actuators, st.faults);
+      }
     }
 
-    // Telemetry tick
-    setInterval(() => {
-      const nowStr = new Date().toLocaleTimeString();
-
-      if (isFaultActive) {
-        currFlow = Math.max(0.2, currFlow - 0.7); // Lưu lượng tụt dốc
-        currPh = Math.min(8.4, currPh + 0.35);    // pH kiềm hóa nguy hiểm
-        currLevel = Math.max(15, currLevel - 8);  // Nước bồn cạn dần
-      } else {
-        if (currFlow < 4.5) currFlow = Math.min(4.5, currFlow + 0.6);
-        else currFlow = 4.5 + (Math.random() * 0.3 - 0.15);
-
-        if (currPh > 6.1) currPh = Math.max(6.1, currPh - 0.3);
-        else currPh = 6.1 + (Math.random() * 0.15 - 0.08);
-
-        if (currLevel < 88) currLevel = Math.min(88, currLevel + 6);
-      }
-
-      const flowVal = parseFloat(currFlow.toFixed(2));
-      const phVal = parseFloat(currPh.toFixed(2));
-
-      document.getElementById('val-flow').innerText = flowVal;
-      document.getElementById('val-ph').innerText = phVal;
-      document.getElementById('val-level').innerText = Math.round(currLevel) + '%';
-
-      const card = document.getElementById('card-rack1');
-      const badge = document.getElementById('badge-rack1');
-      const statusFlow = document.getElementById('status-flow');
-      const statusPh = document.getElementById('status-ph');
-
-      if (flowVal < 1.0 || phVal > 7.5) {
-        card.classList.add('border-rose-500', 'bg-rose-950/20');
-        badge.className = 'px-2.5 py-0.5 rounded text-[11px] font-bold bg-rose-900 text-rose-200 border border-rose-600 animate-pulse';
-        badge.innerText = 'CRITICAL: TẮC ỐNG / KHÓA PH';
-        statusFlow.innerHTML = '<span class="text-rose-400 font-bold">⚠️ Nghẹt rễ nghiêm trọng</span>';
-        statusPh.innerHTML = '<span class="text-rose-400 font-bold">⚠️ pH kiềm hóa (> 7.5)</span>';
-      } else {
-        card.classList.remove('border-rose-500', 'bg-rose-950/20');
-        badge.className = 'px-2.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-700';
-        badge.innerText = 'OPTIMAL';
-        statusFlow.innerText = 'Tuần hoàn tốt';
-        statusPh.innerText = 'Lý tưởng (5.8 - 6.5)';
-      }
-
-      labels.push(nowStr);
-      flowData.push(flowVal);
-      phData.push(phVal);
-
-      if (labels.length > maxDataPoints) {
-        labels.shift();
-        flowData.shift();
-        phData.shift();
-      }
-      chart.update();
-    }, 2000);
+    selectTank(selectedTankId);
+    setInterval(refreshControlState, 2500);
   </script>
 </body>
 </html>

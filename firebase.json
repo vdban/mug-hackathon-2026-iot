@@ -1,0 +1,50 @@
+{
+  "auth": {
+    "providers": {
+      "anonymous": true,
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "Smart Aquarium MUG 2026",
+        "supportEmail": "binhan08052005@gmail.com",
+        "authorizedRedirectUris": [
+          "https://smart-aquarium-mug-2026.firebaseapp.com/__/auth/handler",
+          "https://smart-aquarium-mug-2026.web.app/__/auth/handler",
+          "http://localhost:8000"
+        ]
+      }
+    }
+  },
+  "hosting": {
+    "public": "firebase_web/public",
+    "cleanUrls": true,
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "Access-Control-Allow-Origin",
+            "value": "*"
+          },
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "/data",
+        "destination": "/data.html"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

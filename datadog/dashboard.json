@@ -1,0 +1,121 @@
+{
+  "title": "Smart Hydroponics Fleet Operations (MongoDB × Datadog)",
+  "description": "Real-time AgriTech IoT Telemetry, MongoDB Ingestion Latency, Incident MTTR, and Alert Spikes",
+  "layout_type": "ordered",
+  "notify_list": [],
+  "widgets": [
+    {
+      "definition": {
+        "title": "Pump Flow Rate (LPM) by Rack",
+        "type": "timeseries",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "requests": [
+          {
+            "q": "avg:smartfarm.pump_flow_lpm{*} by {rack_id}",
+            "display_type": "line",
+            "style": {
+              "line_type": "solid",
+              "line_width": "normal",
+              "palette": "cool"
+            }
+          }
+        ],
+        "markers": [
+          {
+            "display_type": "error dashed",
+            "label": "Clogging Threshold (< 1.0 LPM)",
+            "value": "y = 1.0"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Nutrient Solution pH Level by Rack",
+        "type": "timeseries",
+        "show_legend": true,
+        "requests": [
+          {
+            "q": "avg:smartfarm.ph{*} by {rack_id}",
+            "display_type": "line",
+            "style": {
+              "line_type": "solid",
+              "line_width": "normal",
+              "palette": "warm"
+            }
+          }
+        ],
+        "markers": [
+          {
+            "display_type": "error dashed",
+            "label": "Alkaline Lockout (> 7.6)",
+            "value": "y = 7.6"
+          },
+          {
+            "display_type": "ok dashed",
+            "label": "Optimal Min (5.8)",
+            "value": "y = 5.8"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Water Level (%) & Nutrient EC (ppm)",
+        "type": "timeseries",
+        "show_legend": true,
+        "requests": [
+          {
+            "q": "avg:smartfarm.water_level_pct{*} by {rack_id}, avg:smartfarm.ec_ppm{*} by {rack_id}",
+            "display_type": "line"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "MongoDB Batch Ingest Latency (ms)",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:smartfarm.ingest.latency_ms{service:smart-hydroponics-service}",
+            "display_type": "area",
+            "style": {
+              "palette": "purple"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Last Incident MTTR (Seconds)",
+        "type": "query_value",
+        "autoscale": true,
+        "precision": 1,
+        "requests": [
+          {
+            "q": "avg:smartfarm.incidents.mttr_seconds{*}",
+            "aggregator": "last"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Farm Incident Alert Spike ([FARM_ALERT] Count)",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:smartfarm.alerts.count{service:smart-hydroponics-service}.as_count()",
+            "display_type": "bars",
+            "style": {
+              "palette": "red"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

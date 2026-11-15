@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "author": "MUGVN Hackathon 2026 - Frutiger Aqua Smart Aquarium",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 40, "left": 40, "attrs": {} },
+    { "type": "board-ssd1306", "id": "oled1", "top": -180, "left": 280, "attrs": { "i2cAddress": "0x3c" } },
+    { "type": "wokwi-ds18b20", "id": "temp1", "top": 140, "left": 290, "attrs": {} },
+    { "type": "wokwi-resistor", "id": "rTemp", "top": 235, "left": 350, "attrs": { "value": "4700" } },
+    { "type": "wokwi-hc-sr04", "id": "ultrasonic1", "top": -220, "left": 10, "attrs": { "distance": "12" } },
+    { "type": "wokwi-potentiometer", "id": "potPh", "top": -200, "left": -330, "attrs": { "label": "pH Sensor" } },
+    { "type": "wokwi-potentiometer", "id": "potEc", "top": -200, "left": -190, "attrs": { "label": "EC / TDS" } },
+    { "type": "wokwi-slide-switch", "id": "swFault", "top": 20, "left": 290, "attrs": { "label": "Fault Switch" } },
+    { "type": "wokwi-led", "id": "ledPump", "top": 0, "left": -240, "attrs": { "color": "cyan", "label": "Filter Pump" } },
+    { "type": "wokwi-led", "id": "ledFlush", "top": 95, "left": -240, "attrs": { "color": "lime", "label": "Auto Flush / Oxy" } },
+    { "type": "wokwi-led", "id": "ledAlarm", "top": 190, "left": -240, "attrs": { "color": "red", "label": "Critical Alarm" } },
+    { "type": "wokwi-resistor", "id": "r1", "top": 40, "left": -150, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r2", "top": 135, "left": -150, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r3", "top": 230, "left": -150, "attrs": { "value": "220" } },
+    { "type": "wokwi-buzzer", "id": "bz1", "top": 95, "left": -380, "attrs": { "volume": "0.5" } }
+  ],
+  "connections": [
+    [ "oled1:SDA", "esp:21", "blue", [ "v-15", "h-105" ] ],
+    [ "oled1:SCL", "esp:22", "yellow", [ "v-25", "h-110" ] ],
+    [ "oled1:GND", "esp:GND.2", "black", [ "v-35", "h-175" ] ],
+    [ "oled1:VCC", "esp:3V3", "red", [ "v-45", "h-345", "v270" ] ],
+
+    [ "ultrasonic1:VCC", "esp:5V", "red", [ "v35", "h-55", "v330" ] ],
+    [ "ultrasonic1:TRIG", "esp:5", "purple", [ "v45", "h80", "v235" ] ],
+    [ "ultrasonic1:ECHO", "esp:18", "orange", [ "v35", "h80", "v215" ] ],
+    [ "ultrasonic1:GND", "esp:GND.2", "black", [ "v25", "h60", "v170" ] ],
+
+    [ "potPh:GND", "esp:GND.1", "black", [ "v40", "h240", "v275" ] ],
+    [ "potPh:SIG", "esp:34", "cyan", [ "v30", "h290", "v200" ] ],
+    [ "potPh:VCC", "esp:3V3", "red", [ "v20", "h310", "v170" ] ],
+
+    [ "potEc:GND", "esp:GND.1", "black", [ "v40", "h100", "v275" ] ],
+    [ "potEc:SIG", "esp:35", "green", [ "v30", "h160", "v210" ] ],
+    [ "potEc:VCC", "esp:3V3", "red", [ "v20", "h170", "v170" ] ],
+
+    [ "swFault:1", "esp:GND.3", "black", [ "v15", "h-95", "v40" ] ],
+    [ "swFault:2", "esp:19", "magenta", [ "v25", "h-95", "v40" ] ],
+    [ "swFault:3", "oled1:VCC", "red", [ "v35", "h110", "v-290", "h-65" ] ],
+
+    [ "temp1:GND", "esp:GND.3", "black", [ "v15", "h-85", "v-110" ] ],
+    [ "temp1:DQ", "esp:4", "green", [ "v25", "h-85", "v-65" ] ],
+    [ "temp1:VCC", "swFault:3", "red", [ "v35", "h100", "v-155" ] ],
+    [ "rTemp:1", "temp1:DQ", "green", [ "h-45", "v-25" ] ],
+    [ "rTemp:2", "temp1:VCC", "red", [ "h10", "v10", "h-105", "v-35" ] ],
+
+    [ "esp:25", "r1:2", "cyan", [ "h-55", "v-90" ] ],
+    [ "r1:1", "ledPump:A", "cyan", [ "h-65" ] ],
+    [ "ledPump:C", "esp:GND.1", "black", [ "v15", "h-45", "v215", "h260", "v-90" ] ],
+
+    [ "esp:26", "r2:2", "lime", [ "h-65", "v-5" ] ],
+    [ "r2:1", "ledFlush:A", "lime", [ "h-65" ] ],
+    [ "ledFlush:C", "esp:GND.1", "black", [ "v15", "h-45", "v120", "h260", "v-90" ] ],
+
+    [ "esp:27", "r3:2", "red", [ "h-75", "v80" ] ],
+    [ "r3:1", "ledAlarm:A", "red", [ "h-65" ] ],
+    [ "ledAlarm:C", "esp:GND.1", "black", [ "v15", "h-45", "v25", "h260", "v-90" ] ],
+
+    [ "bz1:1", "esp:GND.1", "black", [ "v135", "h345", "v-105" ] ],
+    [ "bz1:2", "esp:14", "orange", [ "v145", "h355", "v-135" ] ]
+  ],
+  "dependencies": {}
+}

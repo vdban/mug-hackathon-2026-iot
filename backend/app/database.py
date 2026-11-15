@@ -1,11 +1,13 @@
 import os
+from pathlib import Path
 from pymongo import MongoClient
 from dotenv import load_dotenv
 
-load_dotenv()
+_ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
+load_dotenv(_ENV_PATH, override=True)
 
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-DB_NAME = os.getenv("MONGODB_DATABASE", "smart_hydroponics_iot")
+DB_NAME = os.getenv("MONGODB_DATABASE", "smart_aquarium_iot")
 
 client = None
 db = None

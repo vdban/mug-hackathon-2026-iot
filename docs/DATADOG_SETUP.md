@@ -1,83 +1,51 @@
-# Datadog Observability Configuration & Setup Guide: Smart Hydroponics
+# Kiến trúc Observability & Cấu hình Datadog: Smart Aquarium
 
-Tài liệu này hướng dẫn cài đặt và thiết lập các năng lực giám sát trên **Datadog** cho hệ thống Nông nghiệp Thủy canh Thông minh:
-1. Dashboard thể hiện tín hiệu vận hành sinh hóa của các giàn rau.
-2. Monitor/Alert cảnh báo sự cố tắc nghẽn ống và kiềm hóa pH.
-3. Năng lực APM (Distributed Tracing) & Log Management liên kết đa chiều.
+Tài liệu này mô tả hệ thống giám sát **Datadog Observability (`datadoghq.com`)** được cấu hình qua [backend/app/datadog_service.py](file:///f:/Project%20nghịch%20linh%20tinh/mug-hackathon-2026-iot/backend/app/datadog_service.py) và [scripts/provision_datadog.py](file:///f:/Project%20nghịch%20linh%20tinh/mug-hackathon-2026-iot/scripts/provision_datadog.py).
 
 ---
 
-## 1. Khởi động Ứng dụng với Datadog APM (ddtrace)
+## 1. Dashboard Vận hành Trực quan
+* **Dashboard Live URL:** [Smart Operations Dashboard (`n72-nmb-pp6`)](https://app.datadoghq.com/dashboard/n72-nmb-pp6/smart-hydroponics-fleet-operations-mongodb--datadog)
+* **Template JSON:** [datadog/dashboard.json](file:///f:/Project%20nghịch%20linh%20tinh/mug-hackathon-2026-iot/datadog/dashboard.json)
+* **Các tín hiệu chính hiển thị trên Dashboard:**
+  1. `smartfarm.pump_flow_lpm` *(gauge, by `rack_id`)* — Lưu lượng tuần hoàn qua lọc sinh học (`< 1.0 LPM` là tắc lọc).
+  2. `smartfarm.ph` *(gauge, by `rack_id`)* — Độ pH nước bể cá (`> 7.6` hoặc `< 5.0` là vùng nguy hiểm).
+  3. `smartfarm.ec_ppm` — Tổng chất rắn hòa tan / độ dẫn TDS (ppm).
+  4. `smartfarm.water_temp` & `smartfarm.water_level_pct` — Nhiệt độ nước (°C) và mực nước bể (%).
+  5. `smartfarm.ingest.latency_ms` — Độ trễ thực thi lệnh `insert_many` vào MongoDB Atlas Time Series (hiệu năng hệ thống).
+  6. `smartfarm.alerts.count` & `smartfarm.incidents.mttr_seconds` — Đếm số lần phát sinh cảnh báo và đo **Mean Time To Resolution (giây)** sau mỗi lần xử lý sự cố.
 
-Thư viện `ddtrace` tự động gắn hooks theo dõi FastAPI và PyMongo:
+---
 
+## 2. Monitors / Alerts Gắn với Rủi ro Vận hành
+Được tự động tạo bằng `python scripts/provision_datadog.py`:
+1. **Monitor P1 — Tắc nghẽn lọc tuần hoàn (ID `345173530`):**
+   * Định nghĩa tại [datadog/monitor_pipe_clog.json](file:///f:/Project%20nghịch%20linh%20tinh/mug-hackathon-2026-iot/datadog/monitor_pipe_clog.json).
+   * Query: `avg(last_1m):avg:smartfarm.pump_flow_lpm{*} by {rack_id} < 1` (Critical `< 1.0 LPM`, Warning `< 2.0 LPM`).
+2. **Monitor P1 — Đột biến Log Cảnh báo / Sốc kiềm pH (ID `345174672` & Fallback pH Drift `345173822`):**
+   * Định nghĩa tại [datadog/monitor_farm_alert_log.json](file:///f:/Project%20nghịch%20linh%20tinh/mug-hackathon-2026-iot/datadog/monitor_farm_alert_log.json) và logic fallback `avg(last_1m):avg:smartfarm.ph{*} by {rack_id} > 7.5` trong [scripts/provision_datadog.py](file:///f:/Project%20nghịch%20linh%20tinh/mug-hackathon-2026-iot/scripts/provision_datadog.py).
+
+---
+
+## 3. Năng lực Bổ sung & Liên kết Đa chiều (Metrics ↔ Logs ↔ Traces ↔ MongoDB)
+1. **Log Management (HTTP Intake v2):** Mọi sự cố `[AQUA_ALERT]`, hành động khôi phục `[INCIDENT_RESOLVED]`, và `[DATADOG_WEBHOOK]` đều được đẩy bất đồng bộ qua `ThreadPoolExecutor` lên `https://http-intake.logs.datadoghq.com/api/v2/logs`.
+2. **APM Distributed Tracing (`ddtrace`):** Tự động gắn `DatadogTraceFilter` và `get_current_trace_context()` để nhúng `dd.trace_id` & `dd.span_id` vào cả Datadog Logs lẫn document trong MongoDB `incidents`.
+3. **Event Stream & Context Tags đồng nhất:** Gửi sự kiện lên `/api/v1/events` khi sự cố bùng phát (`alert_type: "error"`) và khi khắc phục (`alert_type: "success"`), gắn đồng bộ tags:
+   * `rack_id:<AQUA-TANK-01|02|03>`
+   * `crop:<Neon Tetra & Guppy|...>`
+   * `zone:<Living Room 1F|...>`
+   * `env:hackathon`, `service:smart-aquarium-service`
+4. **Auto-Remediation Webhook (`POST /api/webhooks/datadog`):** Hỗ trợ nhận alert webhook từ Datadog Monitor và tự động thực thi `AUTO_WEBHOOK_REVERSE_FLUSH_AND_PH_DOWN` nếu `"auto_remediate": true`.
+
+---
+
+## 4. Tùy chọn chạy kèm Datadog Agent (APM Traces Local)
+Mặc định FastAPI đã gửi trực tiếp Metrics, Logs, Events và Latency qua Datadog HTTP API mà không cần Agent local. Nếu muốn gửi đầy đủ **APM Trace Flamegraph** qua cổng `8126`, có thể bật [docker-compose.yml](file:///f:/Project%20nghịch%20linh%20tinh/mug-hackathon-2026-iot/docker-compose.yml):
 ```powershell
-# Cấu hình biến môi trường trên Windows PowerShell
-$env:DD_API_KEY="<YOUR_DATADOG_API_KEY>"
-$env:DD_SITE="datadoghq.com"  # hoặc us5.datadoghq.com
-$env:DD_ENV="hackathon"
-$env:DD_SERVICE="smart-hydroponics-service"
-$env:DD_LOGS_INJECTION="true"
-
-# Khởi chạy backend với ddtrace-run
+docker compose up --build
+```
+Hoặc chạy backend qua `ddtrace-run`:
+```powershell
 cd backend
 ddtrace-run uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
-
----
-
-## 2. Thiết lập Datadog Dashboard
-
-Truy cập **Dashboards** $\to$ **New Dashboard** (đặt tên: `Smart Hydroponics Fleet Operations`):
-
-### Widget 1: Pump Flow Rate (LPM)
-* **Type:** Timeseries
-* **Metric:** `smartfarm.pump_flow_lpm`
-* **Aggregation:** `avg` by `rack_id`
-* **Ý nghĩa:** Giám sát lưu lượng tuần hoàn nước dinh dưỡng qua rễ cây.
-
-### Widget 2: Nutrient pH Level
-* **Type:** Timeseries
-* **Metric:** `smartfarm.ph`
-* **Aggregation:** `avg` by `rack_id`
-* **Ngưỡng an toàn:** Đặt marker cảnh báo tại $\text{pH} = 5.8$ và $\text{pH} = 6.5$.
-
-### Widget 3: Ingestion API Latency (p95)
-* **Type:** Timeseries
-* **Metric:** `trace.fastapi.request.duration{service:smart-hydroponics-service, resource:post_/api/telemetry/ingest}`
-* **Aggregation:** `p95` by `resource`
-
-### Widget 4: Farm Incident Log Stream
-* **Type:** Log Stream
-* **Query:** `service:smart-hydroponics-service status:error`
-* **Ý nghĩa:** Hiển thị thời gian thực các cảnh báo `[FARM_ALERT]` khi giàn thủy canh bị nghẹt ống hoặc pH kiềm hóa.
-
----
-
-## 3. Thiết lập Monitor & Cảnh báo (Alerts)
-
-Vào **Monitors** $\to$ **New Monitor**:
-
-### Monitor: Cảnh báo Tắc nghẽn Ống & Khóa Dinh dưỡng (Critical Farm Alert)
-* **Loại Monitor:** Log Monitor (hoặc Metric Monitor trên `smartfarm.pump_flow_lpm < 1.0`)
-* **Search Query:** `service:smart-hydroponics-service "FARM_ALERT"`
-* **Alert condition:** Kích hoạt cảnh báo khi xuất hiện $> 2$ logs lỗi trong vòng 1 phút.
-* **Alert Message:**
-  ```text
-  🌱 [CRITICAL] Giàn thủy canh phát hiện tắc nghẽn ống tuần hoàn hoặc pH kiềm hóa!
-  Nguy cơ cháy rễ cây và chết giàn rau.
-  Xem trace và bối cảnh tại: {{log.link}}
-  ```
-* **Priority:** P1 (Critical)
-
----
-
-## 4. Cách Điều tra Đa chiều (Trace $\leftrightarrow$ Log $\leftrightarrow$ Metric)
-
-Khi có alert nổ ra:
-1. Bấm vào link trong Alert $\to$ Datadog mở trực tiếp Log thông báo sự cố `[FARM_ALERT]`.
-2. Bấm nút **View Trace** ở góc dòng log $\to$ Xem toàn bộ vòng đời của request:
-   * Metadata rack `HYDROPONIC-RACK-01`.
-   * Lưu lượng sụt giảm từ 4.5 LPM xuống 0.3 LPM.
-   * Thời gian thực thi lệnh `insert_many` trên MongoDB Time Series.
-3. Nhảy sang tab **Service Map** $\to$ Thấy luồng kết nối trực quan Gateway $\to$ FastAPI $\to$ MongoDB Atlas.

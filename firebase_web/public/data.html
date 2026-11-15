@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dữ Liệu &amp; Biểu Đồ | Frutiger Aqua Smart Aquarium</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --aqua-deep: #004e75;
+      --aqua-mid: #0083b0;
+      --aqua-sky: #56ccf2;
+      --aqua-ice: #b8f1ff;
+    }
+
+    body {
+      font-family: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(180deg, #b8f1ff 0%, #56ccf2 38%, #0083b0 75%, #004e75 100%);
+      background-attachment: fixed;
+      color: #05385b;
+      overflow-x: hidden;
+    }
+
+    .font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+    .caustic-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse at 20% 0%, rgba(255, 255, 255, 0.55) 0%, transparent 50%),
+        radial-gradient(ellipse at 78% 10%, rgba(184, 241, 255, 0.5) 0%, transparent 45%),
+        repeating-linear-gradient(
+          115deg,
+          rgba(255, 255, 255, 0.06) 0px,
+          rgba(255, 255, 255, 0.06) 24px,
+          transparent 24px,
+          transparent 72px
+        );
+    }
+
+    .aqua-glass {
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.74), rgba(210, 248, 255, 0.44));
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1.5px solid rgba(255, 255, 255, 0.85);
+      box-shadow: 0 14px 36px -10px rgba(0, 78, 117, 0.35), inset 0 2px 3px rgba(255, 255, 255, 0.9);
+      border-radius: 24px;
+    }
+
+    .aqua-subcard {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(226, 248, 255, 0.58));
+      border: 1px solid rgba(255, 255, 255, 0.92);
+      box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.95), 0 4px 14px rgba(0, 100, 148, 0.12);
+      border-radius: 16px;
+    }
+
+    .gel-btn {
+      position: relative;
+      overflow: hidden;
+      border-radius: 9999px;
+      font-weight: 700;
+      color: #ffffff;
+      text-shadow: 0 1px 2px rgba(0, 35, 60, 0.35);
+      border: 1.5px solid rgba(255, 255, 255, 0.85);
+      box-shadow: 0 8px 20px -4px rgba(0, 62, 99, 0.45), inset 0 -3px 6px rgba(0, 0, 0, 0.18);
+      transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+      cursor: pointer;
+    }
+    .gel-btn::before {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 6%;
+      right: 6%;
+      height: 46%;
+      border-radius: 9999px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.08));
+      pointer-events: none;
+    }
+    .gel-btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
+    .gel-btn:active { transform: scale(0.97); }
+
+    .gel-aqua { background: linear-gradient(180deg, #48cae4 0%, #0096c7 55%, #0077b6 100%); }
+    .gel-gold { background: linear-gradient(180deg, #ffd166 0%, #f77f00 60%, #d97706 100%); }
+    .gel-indigo { background: linear-gradient(180deg, #818cf8 0%, #4f46e5 58%, #3730a3 100%); }
+    .gel-purple { background: linear-gradient(180deg, #c084fc 0%, #7c3aed 58%, #5b21b6 100%); }
+
+    .nav-pill {
+      border-radius: 9999px;
+      font-weight: 700;
+      padding: 0.42rem 0.95rem;
+      font-size: 0.75rem;
+      border: 1.5px solid rgba(255, 255, 255, 0.9);
+      transition: all 0.16s ease;
+    }
+    .nav-pill.inactive {
+      background: rgba(255, 255, 255, 0.72);
+      color: #075985;
+    }
+    .nav-pill.inactive:hover {
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    .bubble-bg {
+      position: fixed;
+      border-radius: 9999px;
+      pointer-events: none;
+      z-index: 1;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.92), rgba(255,255,255,0.35) 45%, rgba(86,204,242,0.18) 80%, rgba(255,255,255,0.75) 100%);
+      border: 1px solid rgba(255,255,255,0.85);
+      box-shadow: inset -4px -6px 12px rgba(0, 147, 196, 0.2), 0 8px 20px rgba(0, 110, 160, 0.15);
+      animation: floatBubble linear infinite;
+    }
+
+    @keyframes floatBubble {
+      0% { transform: translateY(105vh) scale(0.85); opacity: 0; }
+      10% { opacity: 0.78; }
+      90% { opacity: 0.78; }
+      100% { transform: translateY(-15vh) scale(1.1); opacity: 0; }
+    }
+
+    @keyframes pulse-slow { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+    .pulse-danger { animation: pulse-slow 1.2s infinite; }
+  </style>
+</head>
+<body class="min-h-screen relative">
+  <div class="caustic-overlay"></div>
+
+  <div class="bubble-bg w-16 h-16 left-[5%]" style="animation-duration: 18s; animation-delay: 0s;"></div>
+  <div class="bubble-bg w-10 h-10 left-[18%]" style="animation-duration: 14s; animation-delay: 3s;"></div>
+  <div class="bubble-bg w-24 h-24 left-[76%]" style="animation-duration: 22s; animation-delay: 2s;"></div>
+  <div class="bubble-bg w-12 h-12 left-[90%]" style="animation-duration: 15s; animation-delay: 6s;"></div>
+
+  <!-- Header -->
+  <header class="sticky top-0 z-50 px-4 md:px-6 pt-3">
+    <div class="max-w-7xl mx-auto aqua-glass px-5 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-400 via-cyan-400 to-blue-600 border-2 border-white shadow-md flex items-center justify-center text-2xl">
+          📊
+        </div>
+        <div>
+          <h1 class="text-base md:text-lg font-extrabold text-sky-950 tracking-tight">
+            Frutiger Aqua • Dữ Liệu &amp; Phân Tích Thời Gian Thực
+          </h1>
+          <p class="text-[11px] font-medium text-sky-800/80">
+            MongoDB Time Series ($setWindowFields &amp; $dateTrunc) × Datadog Metrics &amp; Incidents
+          </p>
+        </div>
+      </div>
+
+      <!-- Page Navigation -->
+      <nav class="flex flex-wrap items-center gap-2">
+        <a href="/" class="nav-pill inactive">
+          🎮 Điều khiển
+        </a>
+        <a href="/data.html" class="gel-btn gel-aqua px-4 py-1.5 text-xs">
+          📊 Dữ liệu &amp; Biểu đồ
+        </a>
+        <a id="swaggerLink" href="/docs" target="_blank" class="nav-pill inactive">
+          📚 API Docs
+        </a>
+      </nav>
+
+      <!-- Status & Google Auth -->
+      <div class="flex flex-wrap items-center gap-2">
+        <span id="dbBadge" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white/80 text-sky-900 border border-white shadow-sm">
+          MongoDB: Checking...
+        </span>
+        <span id="ddBadge" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white/80 text-sky-900 border border-white shadow-sm">
+          Datadog: Checking...
+        </span>
+        <span id="fbBadge" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white/80 text-sky-900 border border-white shadow-sm">
+          Firebase: Hosting
+        </span>
+
+        <div id="authLoggedOut" class="flex items-center gap-1.5">
+          <button onclick="signInWithGoogle()" class="gel-btn gel-indigo px-3.5 py-1.5 text-xs flex items-center gap-1.5">
+            <span>🔐</span><span>Đăng nhập Google</span>
+          </button>
+        </div>
+        <div id="authLoggedIn" class="hidden items-center gap-2 bg-white/85 border border-white rounded-full pl-1.5 pr-2.5 py-1 shadow-sm">
+          <img id="userAvatar" src="" alt="Avatar" class="w-6 h-6 rounded-full object-cover border border-sky-200 hidden">
+          <span id="userAvatarFallback" class="w-6 h-6 rounded-full bg-sky-500 text-white text-[11px] font-bold flex items-center justify-center">G</span>
+          <div class="leading-tight">
+            <div id="userName" class="text-[11px] font-extrabold text-sky-950">User</div>
+            <div id="userEmail" class="text-[10px] font-mono text-sky-700">email</div>
+          </div>
+          <button onclick="signOutUser()" class="ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 hover:bg-rose-200 text-rose-800 transition">
+            Thoát
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="relative z-10 max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-6">
+    <!-- Auth fallback notification -->
+    <div id="authNotice" class="hidden aqua-glass px-5 py-3 border-amber-300/90 flex flex-wrap items-center justify-between gap-3">
+      <div class="text-xs text-amber-950 font-medium" id="authNoticeText"></div>
+      <div class="flex items-center gap-2">
+        <button onclick="useDemoGoogleAccount()" class="gel-btn gel-aqua px-3.5 py-1.5 text-xs">
+          ✨ Dùng Hồ Sơ Demo Google
+        </button>
+        <button onclick="document.getElementById('authNotice').classList.add('hidden')" class="px-2.5 py-1 rounded-full text-xs font-bold bg-white/80 text-sky-900">
+          Đóng
+        </button>
+      </div>
+    </div>
+
+    <!-- API Bridge, Share & Datadog Quick Link -->
+    <div class="aqua-glass px-5 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex flex-wrap items-center gap-2 flex-1 min-w-[260px]">
+        <span class="text-xs font-bold text-sky-950">🌐 Backend API:</span>
+        <input
+          id="apiBaseInput"
+          type="text"
+          placeholder="http://127.0.0.1:8000"
+          class="flex-1 min-w-[180px] max-w-sm px-3.5 py-1.5 rounded-full text-xs font-mono bg-white/85 border border-white text-sky-950 focus:outline-none focus:ring-2 focus:ring-cyan-400 shadow-inner"
+        />
+        <button onclick="saveApiBaseUrl()" class="gel-btn gel-aqua px-4 py-1.5 text-xs">
+          Kết nối
+        </button>
+        <button onclick="copyShareLink()" class="gel-btn gel-gold px-4 py-1.5 text-xs">
+          🔗 Copy Link
+        </button>
+      </div>
+      <div class="flex items-center gap-2">
+        <a
+          href="https://app.datadoghq.com/dashboard/fqj-vs6-n5e/smart-hydroponics-fleet-operations-mongodb--datadog"
+          target="_blank"
+          class="gel-btn gel-purple px-4 py-1.5 text-xs"
+        >
+          📈 Mở Datadog Live Dashboard ↗
+        </a>
+        <a href="/" class="gel-btn gel-aqua px-4 py-1.5 text-xs">
+          ← Quay lại Điều khiển
+        </a>
+      </div>
+    </div>
+    <div id="shareBanner" class="hidden aqua-subcard px-4 py-2 text-xs font-semibold text-sky-900"></div>
+
+    <!-- 3 Aquarium Tanks Telemetry Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div id="card-AQUA-TANK-01" class="aqua-glass p-5 transition duration-300">
+        <div class="flex justify-between items-start mb-3">
+          <div>
+            <span class="text-[11px] font-mono font-bold text-sky-700">AQUA-TANK-01 • TANK-01</span>
+            <h3 class="font-extrabold text-sky-950 flex items-center gap-1.5"><span>🐠</span> Bể Thủy Sinh Frutiger Aqua</h3>
+            <p class="text-xs text-sky-800/80">Living Room 1F • Canister Bio-Filter</p>
+          </div>
+          <span id="badge-AQUA-TANK-01" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/80 text-sky-900 border border-white">WAITING</span>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mt-4">
+          <div class="aqua-subcard p-3">
+            <span class="text-[10px] text-sky-800 uppercase font-bold">Lưu lượng lọc</span>
+            <div class="flex items-baseline space-x-1 mt-1">
+              <span id="flow-AQUA-TANK-01" class="text-2xl font-extrabold font-mono text-sky-700">--</span>
+              <span class="text-xs text-sky-700 font-semibold">LPM</span>
+            </div>
+            <span id="sflow-AQUA-TANK-01" class="text-[10px] text-sky-700 mt-1 block">Đang tải...</span>
+          </div>
+          <div class="aqua-subcard p-3">
+            <span class="text-[10px] text-sky-800 uppercase font-bold">Độ pH nước</span>
+            <div class="flex items-baseline space-x-1 mt-1">
+              <span id="ph-AQUA-TANK-01" class="text-2xl font-extrabold font-mono text-emerald-700">--</span>
+              <span class="text-xs text-emerald-700 font-semibold">pH</span>
+            </div>
+            <span id="sph-AQUA-TANK-01" class="text-[10px] text-sky-700 mt-1 block">Chuẩn 5.8 - 6.5</span>
+          </div>
+        </div>
+        <div class="mt-4 grid grid-cols-3 gap-2 text-center text-[11px] pt-3 border-t border-white/70">
+          <div><span class="text-sky-800/80 block">TDS / EC</span><span id="ec-AQUA-TANK-01" class="font-mono font-bold text-sky-950">--</span></div>
+          <div><span class="text-sky-800/80 block">Mực nước</span><span id="level-AQUA-TANK-01" class="font-mono font-bold text-sky-950">--</span></div>
+          <div><span class="text-sky-800/80 block">Nhiệt độ</span><span id="temp-AQUA-TANK-01" class="font-mono font-bold text-sky-950">--</span></div>
+        </div>
+      </div>
+
+      <div id="card-AQUA-TANK-02" class="aqua-glass p-5 transition duration-300">
+        <div class="flex justify-between items-start mb-3">
+          <div>
+            <span class="text-[11px] font-mono font-bold text-sky-700">AQUA-TANK-02 • TANK-02</span>
+            <h3 class="font-extrabold text-sky-950 flex items-center gap-1.5"><span>🪸</span> Bể San Hô Reef Glow</h3>
+            <p class="text-xs text-sky-800/80">Studio 2F • Sump Protein Skimmer</p>
+          </div>
+          <span id="badge-AQUA-TANK-02" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/80 text-sky-900 border border-white">WAITING</span>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mt-4">
+          <div class="aqua-subcard p-3">
+            <span class="text-[10px] text-sky-800 uppercase font-bold">Lưu lượng lọc</span>
+            <div class="flex items-baseline space-x-1 mt-1">
+              <span id="flow-AQUA-TANK-02" class="text-2xl font-extrabold font-mono text-sky-700">--</span>
+              <span class="text-xs text-sky-700 font-semibold">LPM</span>
+            </div>
+            <span id="sflow-AQUA-TANK-02" class="text-[10px] text-sky-700 mt-1 block">Đang tải...</span>
+          </div>
+          <div class="aqua-subcard p-3">
+            <span class="text-[10px] text-sky-800 uppercase font-bold">Độ pH nước</span>
+            <div class="flex items-baseline space-x-1 mt-1">
+              <span id="ph-AQUA-TANK-02" class="text-2xl font-extrabold font-mono text-emerald-700">--</span>
+              <span class="text-xs text-emerald-700 font-semibold">pH</span>
+            </div>
+            <span id="sph-AQUA-TANK-02" class="text-[10px] text-sky-700 mt-1 block">Chuẩn 5.8 - 6.5</span>
+          </div>
+        </div>
+        <div class="mt-4 grid grid-cols-3 gap-2 text-center text-[11px] pt-3 border-t border-white/70">
+          <div><span class="text-sky-800/80 block">TDS / EC</span><span id="ec-AQUA-TANK-02" class="font-mono font-bold text-sky-950">--</span></div>
+          <div><span class="text-sky-800/80 block">Mực nước</span><span id="level-AQUA-TANK-02" class="font-mono font-bold text-sky-950">--</span></div>
+          <div><span class="text-sky-800/80 block">Nhiệt độ</span><span id="temp-AQUA-TANK-02" class="font-mono font-bold text-sky-950">--</span></div>
+        </div>
+      </div>
+
+      <div id="card-AQUA-TANK-03" class="aqua-glass p-5 transition duration-300">
+        <div class="flex justify-between items-start mb-3">
+          <div>
+            <span class="text-[11px] font-mono font-bold text-sky-700">AQUA-TANK-03 • TANK-03</span>
+            <h3 class="font-extrabold text-sky-950 flex items-center gap-1.5"><span>🌿</span> Bể Cá Koi &amp; Thủy Canh Mini</h3>
+            <p class="text-xs text-sky-800/80">Balcony Lounge • Overflow UV Filter</p>
+          </div>
+          <span id="badge-AQUA-TANK-03" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/80 text-sky-900 border border-white">WAITING</span>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mt-4">
+          <div class="aqua-subcard p-3">
+            <span class="text-[10px] text-sky-800 uppercase font-bold">Lưu lượng lọc</span>
+            <div class="flex items-baseline space-x-1 mt-1">
+              <span id="flow-AQUA-TANK-03" class="text-2xl font-extrabold font-mono text-sky-700">--</span>
+              <span class="text-xs text-sky-700 font-semibold">LPM</span>
+            </div>
+            <span id="sflow-AQUA-TANK-03" class="text-[10px] text-sky-700 mt-1 block">Đang tải...</span>
+          </div>
+          <div class="aqua-subcard p-3">
+            <span class="text-[10px] text-sky-800 uppercase font-bold">Độ pH nước</span>
+            <div class="flex items-baseline space-x-1 mt-1">
+              <span id="ph-AQUA-TANK-03" class="text-2xl font-extrabold font-mono text-emerald-700">--</span>
+              <span class="text-xs text-emerald-700 font-semibold">pH</span>
+            </div>
+            <span id="sph-AQUA-TANK-03" class="text-[10px] text-sky-700 mt-1 block">Chuẩn 5.8 - 6.5</span>
+          </div>
+        </div>
+        <div class="mt-4 grid grid-cols-3 gap-2 text-center text-[11px] pt-3 border-t border-white/70">
+          <div><span class="text-sky-800/80 block">TDS / EC</span><span id="ec-AQUA-TANK-03" class="font-mono font-bold text-sky-950">--</span></div>
+          <div><span class="text-sky-800/80 block">Mực nước</span><span id="level-AQUA-TANK-03" class="font-mono font-bold text-sky-950">--</span></div>
+          <div><span class="text-sky-800/80 block">Nhiệt độ</span><span id="temp-AQUA-TANK-03" class="font-mono font-bold text-sky-950">--</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart & Incidents Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2 aqua-glass p-5">
+        <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
+          <div>
+            <h3 class="text-sm font-extrabold text-sky-950 flex items-center gap-1.5">
+              <span>📈</span> Xu hướng Dòng chảy &amp; Moving Average (MongoDB <code>$setWindowFields</code>)
+            </h3>
+            <p class="text-[11px] text-sky-800/80">Theo dõi biến thiên pH &amp; Lưu lượng lọc với trung bình trượt 5 mẫu.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <select id="chartRackSelect" onchange="refreshDataPage()" class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-white/90 text-sky-950 border border-white shadow-sm">
+              <option value="AQUA-TANK-01">AQUA-TANK-01</option>
+              <option value="AQUA-TANK-02">AQUA-TANK-02</option>
+              <option value="AQUA-TANK-03">AQUA-TANK-03</option>
+            </select>
+            <span id="lastUpdateText" class="text-[11px] text-sky-900 font-mono font-bold bg-white/75 px-3 py-1 rounded-full border border-white">Đang đồng bộ...</span>
+          </div>
+        </div>
+        <div class="h-64 bg-white/65 rounded-2xl p-3 border border-white">
+          <canvas id="farmChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Incidents & MTTR Lifecycle -->
+      <div class="aqua-glass p-5 flex flex-col">
+        <h3 class="text-sm font-extrabold text-sky-950 mb-1 flex items-center gap-1.5">
+          <span>🚨</span> Nhật Ký Sự Cố &amp; MTTR (MongoDB <code>incidents</code>)
+        </h3>
+        <p class="text-[11px] text-sky-800/80 mb-3">Tự động lưu ACTIVE khi phát hiện sự cố và tính MTTR khi RESOLVED.</p>
+        <div id="logStream" class="flex-1 overflow-y-auto space-y-2.5 max-h-64 pr-1 text-xs font-mono">
+          <div class="aqua-subcard p-2.5 text-sky-800">Đang tải lịch sử sự cố từ MongoDB...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hourly MongoDB Aggregation Table -->
+    <div class="aqua-glass p-5">
+      <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+        <div>
+          <h3 class="text-sm font-extrabold text-sky-950 flex items-center gap-1.5">
+            <span>🗄️</span> Tổng Hợp Theo Giờ (MongoDB <code>$dateTrunc</code> • <code>Asia/Ho_Chi_Minh</code>)
+          </h3>
+          <p class="text-[11px] text-sky-800/80">Thống kê trực tiếp từ Time Series Collection <code>aquarium_telemetry</code>.</p>
+        </div>
+      </div>
+      <div class="overflow-x-auto bg-white/70 rounded-2xl p-3 border border-white">
+        <table class="min-w-full text-xs text-left">
+          <thead class="text-sky-800 border-b border-sky-200 uppercase font-bold">
+            <tr>
+              <th class="py-2 pr-4">Bể cá (Rack)</th>
+              <th class="py-2 pr-4">Hệ sinh thái</th>
+              <th class="py-2 pr-4">Khung giờ</th>
+              <th class="py-2 pr-4">Avg Flow</th>
+              <th class="py-2 pr-4">Avg pH (Min–Max)</th>
+              <th class="py-2 pr-4">Avg EC</th>
+              <th class="py-2 pr-4">Mực nước TB</th>
+              <th class="py-2">Số mẫu</th>
+            </tr>
+          </thead>
+          <tbody id="hourlyTableBody" class="divide-y divide-sky-100 font-mono text-sky-950">
+            <tr><td colspan="8" class="py-3 text-sky-700">Đang tải tổng hợp theo giờ từ MongoDB...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js';
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signOut,
+      onAuthStateChanged
+    } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js';
+
+    const firebaseConfig = {
+      apiKey: localStorage.getItem('FIREBASE_WEB_API_KEY') || "YOUR_FIREBASE_WEB_API_KEY",
+      authDomain: "smart-aquarium-mug-2026.firebaseapp.com",
+      projectId: "smart-aquarium-mug-2026",
+      storageBucket: "smart-aquarium-mug-2026.firebasestorage.app",
+      messagingSenderId: "979674409009",
+      appId: "1:979674409009:web:ce2ac3c1e261c932628d10"
+    };
+
+    let fbApp = null, fbAuth = null, googleProvider = null;
+    try {
+      fbApp = initializeApp(firebaseConfig);
+      fbAuth = getAuth(fbApp);
+      googleProvider = new GoogleAuthProvider();
+    } catch (_) {}
+
+    function applyUserUI(user) {
+      window.currentUser = user;
+      const loggedOutEl = document.getElementById('authLoggedOut');
+      const loggedInEl = document.getElementById('authLoggedIn');
+      if (user) {
+        loggedOutEl.classList.add('hidden');
+        loggedInEl.classList.remove('hidden');
+        loggedInEl.classList.add('flex');
+        document.getElementById('userName').innerText = user.displayName || 'Aquarium Operator';
+        document.getElementById('userEmail').innerText = user.email || (user.isDemo ? 'demo-operator@gmail.com' : 'verified-user');
+        const avatarEl = document.getElementById('userAvatar');
+        const fallbackEl = document.getElementById('userAvatarFallback');
+        if (user.photoURL) {
+          avatarEl.src = user.photoURL;
+          avatarEl.classList.remove('hidden');
+          fallbackEl.classList.add('hidden');
+        } else {
+          avatarEl.classList.add('hidden');
+          fallbackEl.classList.remove('hidden');
+          fallbackEl.innerText = (user.displayName || 'G')[0].toUpperCase();
+        }
+        document.getElementById('authNotice').classList.add('hidden');
+      } else {
+        loggedOutEl.classList.remove('hidden');
+        loggedInEl.classList.add('hidden');
+        loggedInEl.classList.remove('flex');
+      }
+    }
+
+    if (!fbAuth || firebaseConfig.apiKey === "YOUR_FIREBASE_WEB_API_KEY") {
+      const savedDemo = localStorage.getItem('DEMO_GOOGLE_USER');
+      applyUserUI(savedDemo ? JSON.parse(savedDemo) : null);
+    } else {
+      onAuthStateChanged(fbAuth, (firebaseUser) => {
+        if (firebaseUser) {
+          localStorage.removeItem('DEMO_GOOGLE_USER');
+          applyUserUI(firebaseUser);
+        } else {
+          const savedDemo = localStorage.getItem('DEMO_GOOGLE_USER');
+          applyUserUI(savedDemo ? JSON.parse(savedDemo) : null);
+        }
+      });
+    }
+
+    window.signInWithGoogle = async function () {
+      try {
+        await signInWithPopup(fbAuth, googleProvider);
+      } catch (err) {
+        const notice = document.getElementById('authNotice');
+        const text = document.getElementById('authNoticeText');
+        notice.classList.remove('hidden');
+        text.innerText = `⚠️ Không mở được Google Sign-In popup (${err.code || err.message}). Bạn có thể bấm nút bên cạnh để dùng nhanh Hồ sơ Demo Google.`;
+      }
+    };
+
+    window.useDemoGoogleAccount = function () {
+      const demo = {
+        displayName: 'Hackathon Guest (Google)',
+        email: 'operator@smart-aquarium.demo',
+        photoURL: '',
+        isDemo: true
+      };
+      localStorage.setItem('DEMO_GOOGLE_USER', JSON.stringify(demo));
+      applyUserUI(demo);
+    };
+
+    window.signOutUser = async function () {
+      localStorage.removeItem('DEMO_GOOGLE_USER');
+      try { await signOut(fbAuth); } catch (_) {}
+      applyUserUI(null);
+    };
+  </script>
+
+  <script>
+    const STANDALONE_KEY = 'AQUARIUM_STANDALONE_STATE_V2';
+
+    function resolveDefaultApiBase() {
+      const params = new URLSearchParams(window.location.search);
+      const paramApi = params.get('api');
+      if (paramApi) {
+        const clean = paramApi.trim().replace(/\/+$/, '');
+        localStorage.setItem('API_BASE_URL', clean);
+        return clean;
+      }
+      const saved = localStorage.getItem('API_BASE_URL');
+      if (saved) return saved.replace(/\/+$/, '');
+      const loc = window.location;
+      if (loc.protocol.startsWith('http') && !loc.hostname.endsWith('web.app') && !loc.hostname.endsWith('firebaseapp.com') && loc.port !== '5000') {
+        return loc.origin;
+      }
+      return 'http://127.0.0.1:8000';
+    }
+
+    let API_BASE = resolveDefaultApiBase();
+    document.getElementById('apiBaseInput').value = API_BASE;
+    document.getElementById('swaggerLink').href = `${API_BASE}/docs`;
+
+    function apiUrl(path) { return `${API_BASE}${path}`; }
+
+    async function fetchWithTimeout(url, options = {}, ms = 3200) {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), ms);
+      try {
+        return await fetch(url, { ...options, signal: controller.signal });
+      } finally {
+        clearTimeout(id);
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    async function saveApiBaseUrl() {
+      const raw = document.getElementById('apiBaseInput').value.trim().replace(/\/+$/, '');
+      if (!raw) return;
+      API_BASE = raw;
+      localStorage.setItem('API_BASE_URL', API_BASE);
+      document.getElementById('swaggerLink').href = `${API_BASE}/docs`;
+      await refreshHealth();
+      await refreshDataPage();
+    }
+
+    async function copyShareLink() {
+      const basePage = `${window.location.origin}/data.html`;
+      const isLocal = API_BASE.includes('127.0.0.1') || API_BASE.includes('localhost');
+      const shareUrl = isLocal ? basePage : `${basePage}?api=${encodeURIComponent(API_BASE)}`;
+      try { await navigator.clipboard.writeText(shareUrl); } catch (_) {}
+      const banner = document.getElementById('shareBanner');
+      banner.classList.remove('hidden');
+      banner.innerHTML = isLocal
+        ? `✅ Đã copy link trang dữ liệu: <code class="font-mono bg-white/80 px-1.5 py-0.5 rounded">${escapeHtml(shareUrl)}</code>`
+        : `✅ Đã copy link dữ liệu kèm Backend Live: <code class="font-mono bg-white/80 px-1.5 py-0.5 rounded">${escapeHtml(shareUrl)}</code>`;
+    }
+
+    function getStandaloneState() {
+      const raw = localStorage.getItem(STANDALONE_KEY);
+      if (raw) {
+        try { return JSON.parse(raw); } catch (_) {}
+      }
+      const nowIso = new Date().toISOString();
+      return {
+        faults: {},
+        racks: {
+          'AQUA-TANK-01': { ts: nowIso, sensor: { id: 'AQUA-TANK-01', crop: 'Neon Tetra & Guppy' }, ph: 6.12, ec_ppm: 940, water_temp: 25.2, water_level_pct: 89, pump_flow_lpm: 4.55 },
+          'AQUA-TANK-02': { ts: nowIso, sensor: { id: 'AQUA-TANK-02', crop: 'Clownfish & Coral' }, ph: 6.25, ec_ppm: 1020, water_temp: 25.8, water_level_pct: 86, pump_flow_lpm: 4.20 },
+          'AQUA-TANK-03': { ts: nowIso, sensor: { id: 'AQUA-TANK-03', crop: 'Mini Koi & Moss' }, ph: 6.08, ec_ppm: 890, water_temp: 24.9, water_level_pct: 91, pump_flow_lpm: 4.75 }
+        },
+        history: [],
+        incidents: []
+      };
+    }
+
+    const ctx = document.getElementById('farmChart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          { label: 'Lưu lượng bơm (LPM)', borderColor: '#0284c7', backgroundColor: 'rgba(56, 189, 248, 0.2)', data: [], yAxisID: 'yFlow', tension: 0.28, fill: true, pointRadius: 2 },
+          { label: 'Moving Avg Lưu lượng (5 mẫu)', borderColor: '#7c3aed', borderDash: [5, 4], data: [], yAxisID: 'yFlow', tension: 0.28, pointRadius: 0 },
+          { label: 'Độ pH nước', borderColor: '#059669', data: [], yAxisID: 'yPh', tension: 0.28, pointRadius: 2 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        scales: {
+          x: { grid: { color: 'rgba(0, 119, 182, 0.08)' }, ticks: { color: '#0369a1', maxTicksLimit: 8 } },
+          yFlow: { type: 'linear', position: 'left', min: 0, max: 6, grid: { color: 'rgba(0, 119, 182, 0.08)' }, ticks: { color: '#0284c7' }, title: { display: true, text: 'Flow (LPM)', color: '#0284c7' } },
+          yPh: { type: 'linear', position: 'right', min: 4, max: 10, grid: { drawOnChartArea: false }, ticks: { color: '#059669' }, title: { display: true, text: 'pH Level', color: '#059669' } }
+        },
+        plugins: { legend: { labels: { color: '#0c4a6e', font: { size: 11, weight: 'bold' } } } }
+      }
+    });
+
+    function updateRackCard(reading) {
+      const id = reading.sensor?.id;
+      if (!id) return;
+      const flowEl = document.getElementById(`flow-${id}`);
+      if (!flowEl) return;
+
+      const flowVal = Number(reading.pump_flow_lpm);
+      const phVal = Number(reading.ph);
+
+      flowEl.innerText = flowVal.toFixed(2);
+      document.getElementById(`ph-${id}`).innerText = phVal.toFixed(2);
+      document.getElementById(`ec-${id}`).innerText = Math.round(Number(reading.ec_ppm));
+      document.getElementById(`level-${id}`).innerText = Math.round(Number(reading.water_level_pct)) + '%';
+      document.getElementById(`temp-${id}`).innerText = Number(reading.water_temp).toFixed(1) + '°C';
+
+      const card = document.getElementById(`card-${id}`);
+      const badge = document.getElementById(`badge-${id}`);
+      const sFlow = document.getElementById(`sflow-${id}`);
+      const sPh = document.getElementById(`sph-${id}`);
+
+      const isCritical = flowVal < 1.0 || phVal > 7.6 || phVal < 5.0;
+      if (isCritical) {
+        card.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.75), 0 14px 36px -10px rgba(185, 28, 28, 0.45)';
+        badge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500 text-white border border-white animate-pulse';
+        badge.innerText = 'CRITICAL ALERT';
+        sFlow.innerHTML = flowVal < 1.0 ? '<span class="text-rose-700 font-bold">⚠️ Nghẹt lọc (&lt; 1.0 LPM)</span>' : 'Tuần hoàn ổn định';
+        sPh.innerHTML = (phVal > 7.6 || phVal < 5.0) ? '<span class="text-rose-700 font-bold">⚠️ Sốc pH nguy hiểm</span>' : 'pH ổn định';
+      } else {
+        card.style.boxShadow = '';
+        badge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-white';
+        badge.innerText = 'OPTIMAL';
+        sFlow.innerText = 'Tuần hoàn tốt';
+        sPh.innerText = 'Lý tưởng (5.8 - 6.5)';
+      }
+    }
+
+    function renderIncidents(incidents) {
+      const stream = document.getElementById('logStream');
+      if (!incidents || incidents.length === 0) {
+        stream.innerHTML = '<div class="aqua-subcard p-2.5 text-sky-800">Chưa có sự cố nào được ghi nhận.</div>';
+        return;
+      }
+      stream.innerHTML = incidents.map(inc => {
+        const isActive = inc.status === 'ACTIVE';
+        const ts = inc.resolved_at || inc.detected_at;
+        const timeStr = ts ? new Date(ts).toLocaleTimeString('vi-VN') : '--:--:--';
+        const mttr = (inc.mttr_seconds !== undefined && inc.mttr_seconds !== null) ? ` • MTTR: ${inc.mttr_seconds}s` : '';
+        const detail = isActive ? (inc.alert_type || 'Sự cố đang diễn ra') : (inc.action || 'Đã khắc phục');
+        const cls = isActive ? 'bg-rose-100/90 border-rose-400 text-rose-950 pulse-danger' : 'bg-white/80 border-white text-emerald-900';
+        return `<div class="p-2.5 rounded-xl border text-[11px] shadow-sm ${cls}">
+          <div class="flex justify-between">
+            <span class="font-bold">${isActive ? '🚨 ACTIVE' : '✅ RESOLVED'} • ${escapeHtml(inc.device_id)}</span>
+            <span class="opacity-70">${escapeHtml(timeStr)}</span>
+          </div>
+          <div class="mt-0.5">${escapeHtml(detail)}${escapeHtml(mttr)}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function renderHourly(rows) {
+      const tbody = document.getElementById('hourlyTableBody');
+      if (!rows || rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="py-3 text-sky-700">Chưa có dữ liệu tổng hợp theo giờ.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.slice(-9).reverse().map(r => {
+        const hr = r.hour ? new Date(r.hour).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '--';
+        return `<tr>
+          <td class="py-2 pr-4 font-bold text-sky-800">${escapeHtml(r.rack)}</td>
+          <td class="py-2 pr-4">${escapeHtml(r.crop)}</td>
+          <td class="py-2 pr-4 text-sky-700">${escapeHtml(hr)}</td>
+          <td class="py-2 pr-4 font-bold text-cyan-700">${escapeHtml(r.avgFlowLpm)} LPM</td>
+          <td class="py-2 pr-4">${escapeHtml(r.avgPh)} (${escapeHtml(r.minPh)}–${escapeHtml(r.maxPh)})</td>
+          <td class="py-2 pr-4">${escapeHtml(r.avgEcPpm)} ppm</td>
+          <td class="py-2 pr-4">${escapeHtml(r.avgWaterLevelPct)}%</td>
+          <td class="py-2">${escapeHtml(r.totalReadings)}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    async function refreshHealth() {
+      const dbBadge = document.getElementById('dbBadge');
+      const ddBadge = document.getElementById('ddBadge');
+      const fbBadge = document.getElementById('fbBadge');
+      try {
+        const res = await fetchWithTimeout(apiUrl('/health'));
+        const h = await res.json();
+        dbBadge.className = h.database?.status === 'connected'
+          ? 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100/90 text-emerald-800 border border-white shadow-sm'
+          : 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-rose-100/90 text-rose-800 border border-white shadow-sm';
+        dbBadge.innerText = h.database?.status === 'connected' ? `MongoDB: ${h.database.database}` : 'MongoDB: Disconnected';
+
+        ddBadge.className = h.datadog_connected
+          ? 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-purple-100/90 text-purple-900 border border-white shadow-sm'
+          : 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100/90 text-amber-900 border border-white shadow-sm';
+        ddBadge.innerText = h.datadog_connected ? 'Datadog: Connected' : 'Datadog: Standby';
+
+        fbBadge.innerText = h.firebase_connected ? 'Firebase: Synced' : 'Firebase: Auth & Hosting';
+      } catch (_) {
+        dbBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100/90 text-amber-900 border border-white shadow-sm';
+        dbBadge.innerText = 'Cloud Demo Mode';
+        ddBadge.innerText = 'Datadog: Offline Bridge';
+      }
+    }
+
+    async function refreshDataPage() {
+      const rackId = document.getElementById('chartRackSelect').value;
+      try {
+        const [latestRes, trendRes, incRes, hourlyRes] = await Promise.all([
+          fetchWithTimeout(apiUrl('/api/telemetry/latest?minutes=120')),
+          fetchWithTimeout(apiUrl(`/api/analytics/trend?rack_id=${encodeURIComponent(rackId)}&minutes=30`)),
+          fetchWithTimeout(apiUrl('/api/incidents?limit=15')),
+          fetchWithTimeout(apiUrl('/api/analytics/hourly?hours=24'))
+        ]);
+        if (!latestRes.ok) throw new Error('API offline');
+
+        const latestData = await latestRes.json();
+        for (const r of (latestData.racks || [])) updateRackCard(r);
+
+        if (trendRes.ok) {
+          const trendData = await trendRes.json();
+          const points = (trendData.data || []).slice(-30);
+          chart.data.labels = points.map(p => new Date(p.ts).toLocaleTimeString('vi-VN'));
+          chart.data.datasets[0].data = points.map(p => p.pump_flow_lpm);
+          chart.data.datasets[1].data = points.map(p => p.movingAvgFlowLpm);
+          chart.data.datasets[2].data = points.map(p => p.ph);
+          chart.update();
+          if (points.length > 0) {
+            const lastTs = new Date(points[points.length - 1].ts).toLocaleTimeString('vi-VN');
+            document.getElementById('lastUpdateText').innerText = `Live (${points.length} mẫu • ${lastTs})`;
+          } else {
+            document.getElementById('lastUpdateText').innerText = 'Chưa có mẫu mới';
+          }
+        }
+
+        if (incRes.ok) renderIncidents((await incRes.json()).incidents || []);
+        if (hourlyRes.ok) renderHourly((await hourlyRes.json()).data || []);
+      } catch (_) {
+        const st = getStandaloneState();
+        const racks = Object.values(st.racks || {});
+        for (const r of racks) updateRackCard(r);
+        const pts = (st.history || []).length ? st.history : [st.racks[rackId]].filter(Boolean);
+        chart.data.labels = pts.map(p => new Date(p.ts).toLocaleTimeString('vi-VN'));
+        chart.data.datasets[0].data = pts.map(p => p.pump_flow_lpm);
+        chart.data.datasets[1].data = pts.map((_, idx) => {
+          const slice = pts.slice(Math.max(0, idx - 4), idx + 1);
+          return Number((slice.reduce((s, x) => s + Number(x.pump_flow_lpm), 0) / slice.length).toFixed(2));
+        });
+        chart.data.datasets[2].data = pts.map(p => p.ph);
+        chart.update();
+        document.getElementById('lastUpdateText').innerText = `Cloud Demo (${pts.length} mẫu)`;
+        renderIncidents(st.incidents || []);
+        renderHourly(racks.map(r => ({
+          rack: r.sensor.id,
+          crop: r.sensor.crop,
+          hour: r.ts,
+          avgFlowLpm: r.pump_flow_lpm,
+          avgPh: r.ph,
+          minPh: r.ph,
+          maxPh: r.ph,
+          avgEcPpm: r.ec_ppm,
+          avgWaterLevelPct: r.water_level_pct,
+          totalReadings: pts.length || 1
+        })));
+      }
+    }
+
+    refreshHealth();
+    refreshDataPage();
+    setInterval(refreshDataPage, 2500);
+    setInterval(refreshHealth, 10000);
+  </script>
+</body>
+</html>

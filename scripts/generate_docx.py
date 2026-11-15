@@ -192,7 +192,8 @@ def create_document():
         if stat == "Đã hoàn thành":
             set_cell_background(row[2], "DCFCE7")
 
-    output_path = "F:/Project nghịch linh tinh/mug-hackathon-2026-iot/docs/Smart_Hydroponics_Realtime_Operations_Full_Spec.docx"
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    output_path = os.path.join(project_root, "docs", "Smart_Hydroponics_Realtime_Operations_Full_Spec.docx")
     doc.save(output_path)
     print("Document created successfully at docs/Smart_Hydroponics_Realtime_Operations_Full_Spec.docx")
 

@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Slide Thuyết Trình Chung Kết • Frutiger Aqua Smart Aquarium</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --aqua-grad: linear-gradient(155deg, #b8f1ff 0%, #6ee7f9 25%, #22b8e6 65%, #0e7490 100%);
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+      background: var(--aqua-grad);
+      color: #082f49;
+      margin: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    code, pre { font-family: 'JetBrains Mono', monospace; }
+
+    .caustic-bg {
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 18% 20%, rgba(255,255,255,0.58) 0%, transparent 45%),
+        radial-gradient(circle at 82% 18%, rgba(167,243,208,0.4) 0%, transparent 40%),
+        radial-gradient(circle at 50% 90%, rgba(56,189,248,0.45) 0%, transparent 55%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .aqua-glass {
+      background: linear-gradient(160deg, rgba(255,255,255,0.88) 0%, rgba(232,249,255,0.78) 100%);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1.5px solid rgba(255,255,255,0.95);
+      box-shadow: 0 22px 48px -14px rgba(8, 51, 88, 0.35), inset 0 1px 0 rgba(255,255,255,0.95);
+      border-radius: 26px;
+    }
+
+    .aqua-card {
+      background: linear-gradient(165deg, rgba(255,255,255,0.9) 0%, rgba(224,247,255,0.78) 100%);
+      border: 1px solid rgba(255,255,255,0.95);
+      border-radius: 18px;
+      box-shadow: 0 8px 20px rgba(8, 51, 88, 0.08);
+    }
+
+    .gel-btn {
+      position: relative;
+      overflow: hidden;
+      border-radius: 9999px;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+      border: 1.5px solid rgba(255,255,255,0.9);
+      background: linear-gradient(180deg, #5ce1ff 0%, #0ea5e9 52%, #0284c7 100%);
+      box-shadow: 0 5px 14px rgba(2, 132, 199, 0.35), inset 0 1px 1px rgba(255,255,255,0.9);
+      transition: transform 0.12s ease, filter 0.15s ease;
+    }
+    .gel-btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
+    .gel-emerald { background: linear-gradient(180deg, #6ee7b7 0%, #10b981 55%, #047857 100%); }
+    .gel-dark { background: linear-gradient(180deg, #334155 0%, #0f172a 100%); }
+
+    .slide { display: none; }
+    .slide.active { display: flex; }
+
+    .pill-dot {
+      width: 30px; height: 28px; border-radius: 9999px;
+      font-size: 12px; font-weight: 800;
+      border: 1px solid rgba(255,255,255,0.9);
+      background: rgba(255,255,255,0.6); color: #0369a1;
+      transition: all 0.15s ease;
+    }
+    .pill-dot.active {
+      background: linear-gradient(180deg, #38bdf8, #0284c7);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(2,132,199,0.4);
+    }
+
+    @media print {
+      @page { size: landscape; margin: 8mm; }
+      body { background: #e0f7ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .no-print { display: none !important; }
+      .deck-shell { padding: 0 !important; max-width: 100% !important; height: auto !important; }
+      .slide {
+        display: flex !important;
+        min-height: 185mm !important;
+        max-height: 190mm !important;
+        page-break-after: always;
+        break-after: page;
+        margin-bottom: 10mm;
+      }
+      .slide:last-child { page-break-after: auto; break-after: auto; }
+    }
+  </style>
+</head>
+<body class="relative">
+  <div class="caustic-bg no-print"></div>
+
+  <!-- Top Controls Bar -->
+  <header class="no-print sticky top-0 z-50 px-4 pt-3">
+    <div class="max-w-6xl mx-auto aqua-glass px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5">
+        <a href="/" class="px-3 py-1.5 rounded-full bg-white/85 text-xs font-bold text-sky-900 border border-white hover:bg-white">← Web Điều khiển</a>
+        <a href="/data" class="px-3 py-1.5 rounded-full bg-white/85 text-xs font-bold text-sky-900 border border-white hover:bg-white">📊 Dữ liệu</a>
+        <span id="slideCounter" class="text-xs font-extrabold text-sky-950 ml-1">Slide 1 / 10</span>
+      </div>
+
+      <div id="dotsBar" class="flex flex-wrap items-center gap-1"></div>
+
+      <div class="flex items-center gap-2">
+        <button onclick="prevSlide()" class="px-3 py-1.5 rounded-full bg-white/90 text-xs font-bold text-sky-900 border border-white hover:bg-white">◀ Trước</button>
+        <button onclick="nextSlide()" class="gel-btn px-3.5 py-1.5 text-xs">Sau ▶</button>
+        <button onclick="window.print()" class="gel-btn gel-emerald px-3.5 py-1.5 text-xs">🖨️ Xuất PDF / In Slide</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="deck-shell relative z-10 max-w-6xl mx-auto px-4 py-5 space-y-6">
+
+    <!-- SLIDE 1: COVER -->
+    <section class="slide active aqua-glass p-8 md:p-10 min-h-[76vh] flex-col justify-between">
+      <div class="flex items-center justify-between gap-4">
+        <span class="px-4 py-1.5 rounded-full text-xs font-extrabold bg-cyan-600 text-white shadow">
+          MUGVN HACKATHON 2026 • REAL-TIME OPERATIONS (MONGODB × DATADOG)
+        </span>
+        <span class="text-xs font-mono font-bold text-sky-800">15/11/2026 • Frutiger Aqua Edition</span>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center my-4">
+        <div class="lg:col-span-8 space-y-4">
+          <div class="text-4xl md:text-5xl font-extrabold leading-tight text-sky-950">
+            🐠 Frutiger Aqua<br>
+            <span class="text-sky-700">Smart Aquarium Real-time Operations</span>
+          </div>
+          <p class="text-base md:text-lg font-medium text-sky-900/90 max-w-2xl">
+            Nền tảng giám sát sinh hóa thời gian thực, điều khiển 2 chiều tới phần cứng mô phỏng <b>ESP32 (Wokwi)</b> và phát hiện – điều tra – phản ứng sự cố tự động bằng <b>MongoDB Atlas Time Series</b> &amp; <b>Datadog Observability</b>.
+          </p>
+          <div class="flex flex-wrap gap-2 pt-1">
+            <span class="aqua-card px-3.5 py-1.5 text-xs font-bold">🍃 MongoDB Time Series + TTL</span>
+            <span class="aqua-card px-3.5 py-1.5 text-xs font-bold">🐶 Datadog Dashboard + 2 P1 Monitors + APM/Logs</span>
+            <span class="aqua-card px-3.5 py-1.5 text-xs font-bold">🔌 Wokwi ESP32 Auto-Bridge (&lt;0.2s)</span>
+            <span class="aqua-card px-3.5 py-1.5 text-xs font-bold">🔥 Firebase Google Auth &amp; Hosting</span>
+          </div>
+        </div>
+        <div class="lg:col-span-4 aqua-card p-5 space-y-2.5">
+          <div class="text-xs font-extrabold uppercase tracking-wider text-sky-700">Thông tin Đội thi &amp; Đầu mối</div>
+          <div class="text-sm font-bold text-sky-950">Đội thi: <span class="font-semibold text-sky-800">[Tên đội / Cá nhân]</span></div>
+          <div class="text-xs text-sky-900">Thành viên: <span class="font-medium">[Họ tên – Vai trò – Email]</span></div>
+          <div class="text-xs text-sky-900">Đầu mối (Lead): <span class="font-medium">[Tên – SĐT – Email]</span></div>
+          <hr class="border-sky-200/70">
+          <div class="text-[11px] font-mono text-sky-800">MVP Live: smart-aquarium-mug-2026.web.app</div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between text-xs font-semibold text-sky-800 border-t border-white/70 pt-3">
+        <span>Phím tắt: ← / → chuyển slide • Bấm "Xuất PDF" để lưu nộp bài</span>
+        <span>Slide 1 / 10</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: PROBLEM STATEMENT -->
+    <section class="slide aqua-glass p-8 md:p-10 min-h-[76vh] flex-col justify-between">
+      <div class="flex items-center justify-between">
+        <span class="px-3.5 py-1 rounded-full text-xs font-extrabold bg-rose-500 text-white">02 • BÀI TOÁN VẬN HÀNH THỰC TẾ</span>
+        <span class="text-xs font-bold text-sky-800">Vì sao bể cá thủy sinh cần Real-time Operations?</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 my-4">
+        <div class="aqua-card p-6 border-l-4 border-rose-500 space-y-3">
+          <div class="text-2xl font-extrabold text-rose-800">🚨 Sự cố 1: Tắc nghẽn lọc tuần hoàn</div>
+          <p class="text-sm text-sky-950 leading-relaxed">
+            Cặn hữu cơ và rêu làm nghẹt đường ống bơm lọc (<i>Canister Bio-Filter / Sump</i>) khiến lưu lượng tuần hoàn tụt từ <b>4.5 LPM xuống &lt; 1.0 LPM</b> và mực nước sụt mạnh.
+          </p>
+          <div class="p-3 rounded-xl bg-rose-50 text-xs font-bold text-rose-900">
+            Hậu quả: Nước mất dòng chảy &amp; thiếu oxy hòa tan đột ngột → Cá ngạt trong vòng 1–2 giờ.
+          </div>
+        </div>
+
+        <div class="aqua-card p-6 border-l-4 border-amber-500 space-y-3">
+          <div class="text-2xl font-extrabold text-amber-900">🧪 Sự cố 2: Sốc kiềm hóa pH (&gt; 7.6)</div>
+          <p class="text-sm text-sky-950 leading-relaxed">
+            Khi nước tù đọng hoặc vi sinh mất cân bằng, độ pH vọt lên <b>&gt; 7.6 – 8.2</b>, chuyển hóa Amoni (NH₄⁺) vô hại thành <b>khí độc Amoniac (NH₃)</b>.
+          </p>
+          <div class="p-3 rounded-xl bg-amber-50 text-xs font-bold text-amber-950">
+            Hậu quả: Cháy mang cá Neon Tetra, Guppy, chết san hô — người nuôi truyền thống chỉ phát hiện khi đã quá muộn.
+          </div>
+        </div>
+      </div>
+
+      <div class="aqua-card p-4 bg-gradient-to-r from-cyan-50 to-emerald-50 flex flex-wrap items-center justify-between gap-3">
+        <div class="text-sm font-extrabold text-sky-950">🎯 Mục tiêu giải pháp: Biết sự cố trước khi cá chết • Điều tra nguyên nhân gốc trong 1 cú click • Đo lường tốc độ phục hồi (MTTR)</div>
+        <span class="px-3 py-1 rounded-full bg-emerald-600 text-white text-xs font-bold">Detect → Investigate → Respond</span>
+      </div>
+
+      <div class="flex justify-between text-xs font-semibold text-sky-800 border-t border-white/70 pt-3">
+        <span>Frutiger Aqua Smart Aquarium</span>
+        <span>Slide 2 / 10</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: ARCHITECTURE -->
+    <section class="slide aqua-glass p-8 md:p-10 min-h-[76vh] flex-col justify-between">
+      <div class="flex items-center justify-between">
+        <span class="px-3.5 py-1 rounded-full text-xs font-extrabold bg-sky-600 text-white">03 • KIẾN TRÚC GIẢI PHÁP 4 TẦNG</span>
+        <span class="text-xs font-mono font-bold text-sky-800">Edge ESP32 ↔ FastAPI ↔ MongoDB Atlas × Datadog</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3 my-4">
+        <div class="aqua-card p-4 space-y-2 border-t-4 border-purple-500">
+          <div class="text-sm font-extrabold text-purple-900">1. Phần cứng &amp; Edge</div>
+          <ul class="text-xs space-y-1.5 text-sky-950">
+            <li>• <b>Wokwi ESP32 (AQUA-TANK-01)</b></li>
+            <li>• Cảm biến: DS18B20, HC-SR04, pH, EC/TDS, Fault Switch</li>
+            <li>• Chấp hành: OLED SSD1306, 3 LED trạng thái, Còi Buzzer</li>
+            <li>• Python Fleet Simulator (3 bể)</li>
+          </ul>
+        </div>
+
+        <div class="aqua-card p-4 space-y-2 border-t-4 border-sky-500">
+          <div class="text-sm font-extrabold text-sky-900">2. FastAPI + Auto-Bridge</div>
+          <ul class="text-xs space-y-1.5 text-sky-950">
+            <li>• <b>Wokwi Auto-Bridge</b> chạy nền (TCP RFC2217 :4000, &lt;0.2s)</li>
+            <li>• Ingestion batch <code>insert_many(ordered=False)</code></li>
+            <li>• Web UI Frutiger Aqua: <code>/</code>, <code>/data</code>, <code>/slides</code></li>
+            <li>• Firebase Google Sign-In</li>
+          </ul>
+        </div>
+
+        <div class="aqua-card p-4 space-y-2 border-t-4 border-emerald-600">
+          <div class="text-sm font-extrabold text-emerald-900">3. MongoDB Atlas</div>
+          <ul class="text-xs space-y-1.5 text-sky-950">
+            <li>• DB: <code>smart_aquarium_iot</code></li>
+            <li>• <code>aquarium_telemetry</code> (Time Series, TTL 7d)</li>
+            <li>• <code>incidents</code> (ACTIVE/RESOLVED + MTTR)</li>
+            <li>• <code>devices</code> (3 bể thông minh)</li>
+          </ul>
+        </div>
+
+        <div class="aqua-card p-4 space-y-2 border-t-4 border-indigo-600">
+          <div class="text-sm font-extrabold text-indigo-900">4. Datadog Cloud</div>
+          <ul class="text-xs space-y-1.5 text-sky-950">
+            <li>• Dashboard <code>n72-nmb-pp6</code></li>
+            <li>• 2 Monitors P1 (Flow &amp; Logs/pH)</li>
+            <li>• Logs v2 + APM <code>ddtrace</code> + Events</li>
+            <li>• Webhook <code>/api/webhooks/datadog</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="aqua-card p-3.5 text-center font-mono text-xs font-bold text-sky-950">
+        [Wokwi ESP32 :4000] ⇄ [FastAPI Auto-Bridge :8000] ➔ [MongoDB Time Series] + [Datadog Metrics/Logs/Traces] ⇄ [Web / Firebase UI]
+      </div>
+
+      <div class="flex justify-between text-xs font-semibold text-sky-800 border-t border-white/70 pt-3">
+        <span>Tương tác 2 chiều toàn trình dưới 200ms</span>
+        <span>Slide 3 / 10</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: MONGODB DATA MODEL -->
+    <section class="slide aqua-glass p-8 md:p-10 min-h-[76vh] flex-col justify-between">
+      <div class="flex items-center justify-between">
+        <span class="px-3.5 py-1 rounded-full text-xs font-extrabold bg-emerald-600 text-white">04 • KIẾN TRÚC DỮ LIỆU MONGODB ATLAS</span>
+        <span class="text-xs font-mono font-bold text-emerald-900">Database: smart_aquarium_iot</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-5 my-4 items-stretch">
+        <div class="md:col-span-6 aqua-card p-5 space-y-2">
+          <div class="text-sm font-extrabold text-emerald-950">Schema chuẩn "One Reading, Three Parts"</div>
+          <pre class="text-[11px] bg-slate-900 text-emerald-300 p-3.5 rounded-xl overflow-x-auto leading-relaxed">{
+  "ts": ISODate("2026-11-15T15:34:19Z"), // timeField
+  "sensor": {                            // metaField
+    "id": "AQUA-TANK-01",
+    "zone": "Living Room 1F",
+    "crop": "Neon Tetra &amp; Guppy",
+    "system_type": "Canister Bio-Filter"
+  },
+  "ph": 6.82, "ec_ppm": 400,             // measurements
+  "water_temp": 25.0,
+  "water_level_pct": 88.5,
+  "pump_flow_lpm": 4.50
+}</pre>
+        </div>
+
+        <div class="md:col-span-6 flex flex-col justify-between gap-3">
+          <div class="aqua-card p-4">
+            <div class="text-xs font-extrabold text-emerald-900 uppercase">Tối ưu Time Series &amp; Vòng đời dữ liệu</div>
+            <ul class="text-xs space-y-1.5 mt-1.5 text-sky-950">
+              <li>✅ <b>granularity: "seconds"</b> — Nén bucket tối ưu cho nhịp 2 giây/mẫu.</li>
+              <li>✅ <b>expireAfterSeconds: 604800</b> — TTL tự động dọn dữ liệu quá 7 ngày.</li>
+              <li>✅ <b>Compound Indexes:</b> <code>[('sensor.id', 1), ('ts', -1)]</code> &amp; <code>[('sensor.crop', 1), ('ts', -1)]</code>.</li>
+            </ul>
+          </div>
+          <div class="aqua-card p-4">
+            <div class="text-xs font-extrabold text-emerald-900 uppercase">Collections Vận hành Bổ trợ</div>
+            <ul class="text-xs space-y-1.5 mt-1.5 text-sky-950">
+              <li>📋 <b>incidents:</b> Lưu <code>status</code> (ACTIVE/RESOLVED), <code>detected_at</code>, <code>resolved_at</code>, <code>mttr_seconds</code>, <code>trigger_reading</code>, và <code>dd_trace_id</code>.</li>
+              <li>🐠 <b>devices:</b> Danh mục cấu hình 3 bể <code>AQUA-TANK-01/02/03</code>.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-between text-xs font-semibold text-sky-800 border-t border-white/70 pt-3">
+        <span>Khởi tạo chuẩn xác qua scripts/setup_mongo.py</span>
+        <span>Slide 4 / 10</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: MONGODB AGGREGATION PIPELINES -->
+    <section class="slide aqua-glass p-8 md:p-10 min-h-[76vh] flex-col justify-between">
+      <div class="flex items-center justify-between">
+        <span class="px-3.5 py-1 rounded-full text-xs font-extrabold bg-emerald-700 text-white">05 • MONGODB AGGREGATION PIPELINES</span>
+        <span class="text-xs font-mono font-bold text-sky-900">backend/app/analytics.py</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 my-4">
+        <div class="aqua-card p-5 space-y-2">
+          <div class="text-sm font-extrabold text-sky-950">1. Trạng thái Mới nhất</div>
+          <div class="text-[11px] font-mono text-sky-700">GET /api/telemetry/latest</div>
+          <p class="text-xs text-sky-900 leading-relaxed">
+            <code>$match</code> theo <code>ts</code> ngay đầu pipeline để <b>skip buckets</b>, sau đó <code>$sort: {ts: -1}</code> và <code>$group</code> theo <code>$sensor.id</code> với <code>$first</code> để trả thông số tức thời của cả 3 bể.
+          </p>
+        </div>
+
+        <div class="aqua-card p-5 space-y-2">
+          <div class="text-sm font-extrabold text-sky-950">2. Tổng hợp Theo Giờ</div>
+          <div class="text-[11px] font-mono text-sky-700">GET /api/analytics/hourly</div>
+          <p class="text-xs text-sky-900 leading-relaxed">
+            Dùng <code>$dateTrunc</code> với <code>unit: "hour"</code> và <code>timezone: "Asia/Ho_Chi_Minh"</code> tính <code>avgPh</code>, <code>minPh</code>, <code>maxPh</code>, <code>avgEcPpm</code>, <code>avgFlowLpm</code> hiển thị tại trang <code>/data</code>.
+          </p>
+        </div>
+
+        <div class="aqua-card p-5 space-y-2 border-2 border-cyan-400">
+          <div class="text-sm font-extrabold text-cyan-950">3. Window Function Phát hiện Sớm</div>
+          <div class="text-[11px] font-mono text-cyan-700">GET /api/analytics/trend</div>
+          <p class="text-xs text-sky-900 leading-relaxed">
+            Dùng <b><code>$setWindowFields</code></b> (<code>documents: [-4, 0]</code>) tính trung bình trượt 5 mẫu gần nhất: <code>movingAvgFlowLpm</code> &amp; <code>movingAvgPh</code> để nhận diện tắc lọc thật sự so với nhiễu tức thời.
+          </p>
+        </div>
+      </div>
+
+      <div class="aqua-card p-3.5 text-xs font-mono bg-slate-900 text-cyan-300 rounded-xl">
+        $setWindowFields: { sortBy: { ts: 1 }, output: { movingAvgFlow: { $avg: "$pump_flow_lpm", window: { documents: [-4, 0] } }, movingAvgPh: { $avg: "$ph", window: { documents: [-4, 0] } } } }
+      </div>
+
+      <div class="flex justify-between text-xs font-semibold text-sky-800 border-t border-white/70 pt-3">
+        <span>Phục vụ trực tiếp cho biểu đồ Chart.js &amp; điều tra sự cố</span>
+        <span>Slide 5 / 10</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 6: DATADOG OBSERVABILITY -->
+    <section class="slide aqua-glass p-8 md:p-10 min-h-[76vh] flex-col justify-between">
+      <div class="flex items-center justify-between">
+        <span class="px-3.5 py-1 rounded-full text-xs font-extrabold bg-purple-700 text-white">06 • KIẾN TRÚC OBSERVABILITY TRÊN DATADOG</span>
+        <span class="text-xs font-mono font-bold text-purple-900">Site: datadoghq.com • Service: smart-aquarium-service</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
+        <div class="aqua-card p-5 space-y-2.5">
+          <div class="text-sm font-extrabold text-purple-950">📊 Dashboard Vận hành (ID: n72-nmb-pp6)</div>
+          <ul class="text-xs space-y-1 text-sky-950">
+            <li>• Sinh hóa &amp; Thủy lực: <code>smartfarm.pump_flow_lpm</code>, <code>smartfarm.ph</code>, <code>smartfarm.ec_ppm</code>, <code>smartfarm.water_temp</code>, <code>smartfarm.water_level_pct</code></li>
+            <li>• Sức khỏe Backend &amp; MongoDB: <code>smartfarm.ingest.latency_ms</code></li>
+            <li>• Hiệu quả xử lý sự cố: <code>smartfarm.alerts.count</code> &amp; <code>smartfarm.incidents.mttr_seconds</code></li>
+          </ul>
+          <div class="text-sm font-extrabold text-purple-950 pt-2">🚨 2 Alert Monitors P1 đã tạo tự động</div>
+          <ul class="text-xs space-y-1 text-sky-950">
+            <li>• <b>ID 345173530:</b> <code>avg(last_1m):smartfarm.pump_flow_lpm &lt; 1.0</code> (Tắc lọc)</li>
+            <li>• <b>ID 345174672 / 345173822:</b> Đột biến Log sự cố &amp; Sốc kiềm pH &gt; 7.5</li>
+          </ul>
+        </div>
+
+        <div class="aqua-card p-5 space-y-2.5">
+          <div class="text-sm font-extrabold text-purple-950">🔗 Kết nối Đa chiều (Metrics ↔ Logs ↔ Traces)</div>
+          <ul class="text-xs space-y-1.5 text-sky-950">
+            <li>✅ <b>Log Management (Logs Intake v2):</b> Mọi log <code>[AQUA_ALERT]</code>, <code>[INCIDENT_RESOLVED]</code> đẩy bất đồng bộ kèm <code>dd.trace_id</code> và <code>dd.span_id</code>.</li>
+            <li>✅ <b>APM Distributed Tracing (<code>ddtrace</code>):</b> Bắt trace xuyên FastAPI → PyMongo, gắn trace ID vào cả bản ghi MongoDB <code>incidents</code>.</li>
+            <li>✅ <b>Event Stream + Webhook Remediation:</b> Đẩy Event lỗi/khôi phục và nhận <code>POST /api/webhooks/datadog</code> tự động xả ngược lọc.</li>
+            <li>✅ <b>Context Tags đồng nhất:</b> <code>rack_id</code>, <code>crop</code>, <code>zone</code>, <code>env</code>, <code>service</code>.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="flex justify-between text-xs font-semibold text-sky-800 border-t border-white/70 pt-3">
+        <span>Cài đặt tự động hóa 1 lệnh: python scripts/provision_datadog.py</span>
+        <span>Slide 6 / 10</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 7: INCIDENT SCENARIO -->
+    <section class="slide aqua-glass p-8 md:p-10 min-h-[76vh] flex-col justify-between">
+      <div class="flex items-center justify-between">
+        <span class="px-3.5 py-1 rounded-full text-xs font-extrabold bg-rose-600 text-white">07 • SỰ CỐ VẬN HÀNH: DETECT → INVESTIGATE → RESPOND</span>
+        <span class="text-xs font-mono font-bold text-sky-900">Bể mục tiêu: AQUA-TANK-01</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 my-4">
+        <div class="aqua-card p-5 border-t-4 border-rose-500 space-y-2">
+          <div class="text-base font-extrabold text-rose-800">1. DETECT (Phát hiện)</div>
+          <p class="text-xs text-sky-950 leading-relaxed">
+            Gạt công tắc <code>Fault Switch</code> trên Wokwi (hoặc bấm <b>🚨 Gây Sự Cố</b> trên Web): Lưu lượng tụt <b>0.35 LPM</b>, pH vọt <b>8.15</b>.
+          </p>
+          <p class="text-xs font-bold text-rose-800">
+            → LED đỏ sáng, Còi hú, OLED báo <code>CLOG ALERT!</code>, MongoDB mở incident <code>ACTIVE</code>, Datadog nổ P1 Alert.
+          </p>
+        </div>
+
+        <div class="aqua-card p-5 border-t-4 border-amber-500 space-y-2">
+          <div class="text-base font-extrabold text-amber-900">2. INVESTIGATE (Điều tra)</div>
+          <p class="text-xs text-sky-950 leading-relaxed">
+            Từ Datadog Alert mở Log <code>[AQUA_ALERT]</code> gắn <code>rack_id:AQUA-TANK-01</code> &amp; <code>dd.trace_id</code>; kiểm tra <code>ingest.latency_ms</code> bình thường để loại trừ lỗi DB.
+          </p>
+          <p class="text-xs font-bold text-amber-900">
+            → Đồ thị MongoDB <code>$setWindowFields</code> tại <code>/data</code> xác nhận đường trung bình trượt Flow giảm dốc.
+          </p>
+        </div>
+
+        <div class="aqua-card p-5 border-t-4 border-emerald-500 space-y-2">
+          <div class="text-base font-extrabold text-emerald-800">3. RESPOND (Phản ứng)</div>
+          <p class="text-xs text-sky-950 leading-relaxed">
+            Bấm <b>🛠️ Xả Ngược &amp; Cân Bằng pH</b> trên Web (hoặc Datadog Webhook tự động kích hoạt <code>/api/incident/respond</code>).
+          </p>
+          <p class="text-xs font-bold text-emerald-800">
+            → ESP32 tắt còi/LED đỏ sau &lt;0.2s, MongoDB đóng incident <code>RESOLVED</code> và gửi metric <code>mttr_seconds</code> lên Datadog.
+          </p>
+        </div>
+      </div>
+
+      <div class="aqua-card p-3.5 text-xs font-bold text-sky-950 text-center">
+        ⏱️ Toàn bộ chu trình từ lúc gạt lỗi → cảnh báo → điều tra → xả ngược → ghi nhận MTTR diễn ra trực tiếp trong &lt; 30 giây!
+      </div>
+
+      <div class="flex justify-between text-xs font-semibold text-sky-800 border-t border-white/70 pt-3">
+        <span>Chứng minh rõ giá trị kết hợp MongoDB + Datadog</span>
+        <span>Slide 7 / 10</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 8: LIVE 2-WAY DEMO & UI -->
+    <section class="slide aqua-glass p-8 md:p-10 min-h-[76vh] flex-col justify-between">
+      <div class="flex items-center justify-between">
+        <span class="px-3.5 py-1 rounded-full text-xs font-extrabold bg-cyan-600 text-white">08 • DEMO 2 CHIỀU: WEB UI ↔ PHẦN CỨNG WOKWI</span>
+        <span class="text-xs font-mono font-bold text-sky-900">Auto-Bridge RFC2217 :4000</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 my-4">
+        <div class="aqua-card p-5 space-y-2.5">
+          <div class="text-sm font-extrabold text-sky-950">🎛️ Trang Điều khiển Thuần túy (<code>/</code>)</div>
+          <ul class="text-xs space-y-1.5 text-sky-950">
+            <li>• Bể thủy sinh Frutiger Aqua đổi màu xanh/đỏ theo trạng thái thật, mực nước lên xuống theo cảm biến siêu âm <b>HC-SR04</b>.</li>
+            <li>• 4 nút điều khiển: <b>🚨 Gây Sự Cố</b>, <b>🛠️ Xả Ngược &amp; Cân Bằng pH</b>, <b>🫧 Bật/Tắt Sục Khí Oxy</b>, <b>🐠 Cho Cá Ăn</b>.</li>
+            <li>• Tích hợp <b>Đăng nhập Google (Firebase Auth)</b> lưu vết người vận hành + Link chia sẻ.</li>
+          </ul>
+        </div>
+
+        <div class="aqua-card p-5 space-y-2.5">
+          <div class="text-sm font-extrabold text-sky-950">🔌 Phản hồi Phần cứng Wokwi ESP32 (&lt;0.2s)</div>
+          <ul class="text-xs space-y-1.5 text-sky-950">
+            <li>• Vặn núm <code>pH Sensor</code>, <code>EC / TDS</code> hoặc kéo khoảng cách <code>HC-SR04</code> → Web <code>/data</code> &amp; Datadog cập nhật ngay.</li>
+            <li>• Bấm <b>🫧 Sục Khí Oxy</b> trên Web → Đèn LED xanh lá trên Wokwi bật/tắt ngay lập tức.</li>
+            <li>• Màn hình OLED SSD1306 &amp; Serial Monitor hiển thị tiếng Việt trực quan: <code>[BỂ CÁ TANK-01] Trạng thái | pH | TDS | Nhiệt độ | Mực nước</code>.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="aqua-card p-3.5 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-sky-950">
+        <span>⚡ Không cần chạy tay script cầu nối: FastAPI tự động bắt mạch Wokwi ngay khi nhấn Play!</span>
+        <span class="font-mono text-sky-700">Tests: 8/8 Pytest PASSED</span>
+      </div>
+
+      <div class="flex justify-between text-xs font-semibold text-sky-800 border-t border-white/70 pt-3">
+        <span>UI thiết kế song song trên Figma &amp; deploy Firebase Hosting</span>
+        <span>Slide 8 / 10</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 9: REUSABLE ASSETS, DATASET & AI DISCLOSURE -->
+    <section class="slide aqua-glass p-8 md:p-10 min-h-[76vh] flex-col justify-between">
+      <div class="flex items-center justify-between">
+        <span class="px-3.5 py-1 rounded-full text-xs font-extrabold bg-slate-700 text-white">09 • KHAI BÁO THÀNH PHẦN TÁI SỬ DỤNG, DATASET &amp; AI</span>
+        <span class="text-xs font-bold text-sky-900">Minh bạch bản quyền &amp; nguồn dữ liệu</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 my-4">
+        <div class="aqua-card p-5 space-y-2">
+          <div class="text-sm font-extrabold text-sky-950">📦 Thư viện Mã nguồn Mở</div>
+          <ul class="text-xs space-y-1 text-sky-900">
+            <li>• <b>Python Backend:</b> FastAPI, Uvicorn, PyMongo, Pydantic, Requests, python-dotenv, ddtrace, pytest, httpx</li>
+            <li>• <b>Frontend &amp; Auth:</b> Tailwind CSS CDN, Chart.js CDN, Firebase Auth &amp; Hosting</li>
+            <li>• <b>Firmware ESP32:</b> Adafruit GFX, Adafruit SSD1306, ArduinoJson, DallasTemperature, OneWire</li>
+          </ul>
+        </div>
+
+        <div class="aqua-card p-5 space-y-2">
+          <div class="text-sm font-extrabold text-sky-950">📊 Dataset Sử dụng</div>
+          <p class="text-xs text-sky-900 leading-relaxed">
+            <b>Không sử dụng dataset bên ngoài</b> hay dữ liệu cá nhân/nội bộ doanh nghiệp.
+          </p>
+          <p class="text-xs text-sky-900 leading-relaxed">
+            Toàn bộ dữ liệu cảm biến sinh hóa (pH, TDS, Nhiệt độ, Mực nước, Lưu lượng) được tạo từ <b>cảm biến mô phỏng phần cứng Wokwi ESP32</b> và trình giả lập toán học <code>sensor_simulator.py</code>.
+          </p>
+        </div>
+
+        <div class="aqua-card p-5 space-y-2">
+          <div class="text-sm font-extrabold text-sky-950">🤖 Công cụ AI đã sử dụng</div>
+          <p class="text-xs text-sky-900 leading-relaxed">
+            Sử dụng <b>Google Antigravity (Gemini)</b> hỗ trợ:
+          </p>
+          <ul class="text-xs space-y-1 text-sky-900">
+            <li>• Tư vấn kiến trúc MongoDB Time Series &amp; Datadog</li>
+            <li>• Sinh khung code FastAPI, Wokwi Auto-Bridge &amp; giao diện Frutiger Aqua</li>
+            <li>• Hỗ trợ kiểm thử &amp; chuẩn hóa tài liệu nộp bài</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="flex justify-between text-xs font-semibold text-sky-800 border-t border-white/70 pt-3">
+        <span>Tuân thủ đầy đủ quy định minh bạch của Ban Tổ Chức</span>
+        <span>Slide 9 / 10</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 10: SUMMARY & LINKS -->
+    <section class="slide aqua-glass p-8 md:p-10 min-h-[76vh] flex-col justify-between">
+      <div class="flex items-center justify-between">
+        <span class="px-3.5 py-1 rounded-full text-xs font-extrabold bg-emerald-600 text-white">10 • TỔNG KẾT &amp; LINK TRUY CẬP HỆ THỐNG</span>
+        <span class="text-xs font-bold text-sky-900">Cảm ơn Ban Giám Khảo!</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 my-4">
+        <div class="aqua-card p-5 space-y-2.5">
+          <div class="text-base font-extrabold text-sky-950">🏆 Điểm nổi bật của Giải pháp</div>
+          <ul class="text-xs space-y-1.5 text-sky-950">
+            <li>✅ <b>MongoDB làm trung tâm:</b> Time Series Collection (TTL 7 ngày, Compound Indexes), <code>$dateTrunc</code>, <code>$setWindowFields</code>, và quản lý MTTR sự cố.</li>
+            <li>✅ <b>Datadog Observability toàn diện:</b> Dashboard live, 2 Monitors P1, Logs v2, APM Traces, Event Stream &amp; Webhook Auto-Remediation.</li>
+            <li>✅ <b>Vận hành thực tế mượt mà:</b> Tương tác 2 chiều Web ↔ Wokwi ESP32 dưới 0.2s, đăng nhập Google &amp; chạy 1-click.</li>
+          </ul>
+        </div>
+
+        <div class="aqua-card p-5 space-y-2">
+          <div class="text-base font-extrabold text-sky-950">🔗 Đường dẫn Dự án</div>
+          <ul class="text-xs font-mono space-y-1.5 text-sky-900 break-all">
+            <li>• <b>Firebase Web Live:</b> https://smart-aquarium-mug-2026.web.app</li>
+            <li>• <b>Datadog Dashboard:</b> https://app.datadoghq.com/dashboard/n72-nmb-pp6</li>
+            <li>• <b>Figma Design:</b> figma.com/design/Q14P0NQsoVYwJySP4veLSu</li>
+            <li>• <b>FigJam Architecture:</b> figma.com/board/b5IvzYRRUWcEJ2llejPcA5</li>
+            <li>• <b>Local MVP &amp; Docs:</b> http://127.0.0.1:8000/docs</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="aqua-card p-4 text-center text-sm font-extrabold text-sky-950 bg-gradient-to-r from-cyan-100/80 to-emerald-100/80">
+        🐠 Frutiger Aqua Smart Aquarium — Phát hiện sớm, Điều tra nhanh, Cứu hệ sinh thái trước khi quá muộn!
+      </div>
+
+      <div class="flex justify-between text-xs font-semibold text-sky-800 border-t border-white/70 pt-3">
+        <span>Q&amp;A • Sẵn sàng Demo trực tiếp</span>
+        <span>Slide 10 / 10</span>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const dotsBar = document.getElementById('dotsBar');
+    const counter = document.getElementById('slideCounter');
+    let current = 0;
+
+    function renderDots() {
+      dotsBar.innerHTML = slides.map((_, idx) =>
+        `<button onclick="goToSlide(${idx})" class="pill-dot ${idx === current ? 'active' : ''}">${idx + 1}</button>`
+      ).join('');
+    }
+
+    function showSlide(index) {
+      current = Math.max(0, Math.min(slides.length - 1, index));
+      slides.forEach((s, i) => s.classList.toggle('active', i === current));
+      counter.innerText = `Slide ${current + 1} / ${slides.length}`;
+      renderDots();
+    }
+
+    window.goToSlide = (i) => showSlide(i);
+    window.nextSlide = () => showSlide(current + 1);
+    window.prevSlide = () => showSlide(current - 1);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); }
+      else if (e.key === 'Home') { e.preventDefault(); showSlide(0); }
+      else if (e.key === 'End') { e.preventDefault(); showSlide(slides.length - 1); }
+    });
+
+    showSlide(0);
+  </script>
+</body>
+</html>

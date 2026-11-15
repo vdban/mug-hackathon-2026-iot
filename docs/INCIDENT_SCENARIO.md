@@ -1,65 +1,48 @@
-# Kịch bản Trình diễn Vận hành Thực tế: Smart Hydroponics Farm
-### Chu trình 3 bước: Phát hiện (Detect) $\to$ Điều tra (Investigate) $\to$ Phản ứng (Respond)
-
-Tài liệu này dùng làm kịch bản thuyết trình và quay video demo cho ban giám khảo cuộc thi MongoDB User Group Vietnam Hackathon 2026.
+# Kịch bản Trình diễn Sự cố Vận hành: Frutiger Aqua Smart Aquarium
+### Chu trình 3 bước: Phát hiện (Detect) → Điều tra (Investigate) → Phản ứng (Respond)
 
 ---
 
-## 🎬 Bối cảnh Sự cố (Incident Scenario)
-* **Tình huống:** Giàn xà lách thủy canh ban công (`HYDROPONIC-RACK-01`) sau 3 tuần sinh trưởng rễ phát triển quá rậm rạp làm nghẹt đường ống cấp dinh dưỡng hồi lưu (Clogging / Nutrient Lockout).
-* **Hậu quả:** 
-  * Lưu lượng tuần hoàn tụt dốc từ $4.5\text{ LPM} \to 0.2\text{ LPM}$.
-  * Mực nước bồn rễ cạn kiệt xuống còn $15\%$.
-  * Độ pH kiềm hóa vọt lên **8.2** (ngưỡng khóa rễ cây, không thể hấp thụ vi lượng sắt và nitơ, rau sẽ héo rũ và chết trong vòng vài giờ).
+## 🎬 Bối cảnh Sự cố Trình diễn
+* **Đối tượng:** Bể thủy sinh `AQUA-TANK-01` (*Neon Tetra & Guppy*, khu vực `Living Room 1F`, dùng bộ lọc `Canister Bio-Filter`), mô phỏng trực tiếp bằng bo mạch ESP32 trên Wokwi (`wokwi/diagram.json`).
+* **Tình huống lỗi:** Cặn hữu cơ và lá thủy sinh mục làm nghẹt đầu hút/lõi lọc sinh học khiến bơm tuần hoàn mất lưu lượng và nước trong bể bị kiềm hóa đột ngột.
+* **Tác động vận hành:**
+  * Lưu lượng lọc tụt dốc từ `4.50 LPM` xuống **`0.35 LPM`** (ngưỡng cảnh báo `< 1.0 LPM`).
+  * Độ pH tăng vọt lên **`≥ 8.15`** (ngưỡng nguy hiểm `> 7.6` gây ngộ độc NH₃).
+  * Mực nước tụt xuống `28%`.
 
 ---
 
-## ⏱️ Kịch bản 3 phút Demo trực tiếp
+## ⏱️ Diễn tiến 3 Bước Demo Trực tiếp
 
-### BƯỚC 1: PHÁT HIỆN (DETECT) - "Biết có chuyện trước người dùng"
-1. **Trạng thái ban đầu:**
-   * 3 giàn thủy canh gửi dữ liệu đều đặn mỗi 2 giây.
-   * Dashboard hiển thị màu xanh tối ưu: Lưu lượng bơm 4.5 LPM, pH duy trì 6.1 (vùng lý tưởng), p95 latency của API $< 15\text{ms}$.
-2. **Kích hoạt sự cố (Inject Fault):**
-   * Người thuyết trình chạy lệnh:
-     ```bash
-     python scripts/trigger_incident.py --fault --device HYDROPONIC-RACK-01
-     ```
-   * Hoặc bấm nút đỏ **"Kích hoạt sự cố"** ngay trên giao diện Web UI tại [http://127.0.0.1:8000](http://127.0.0.1:8000).
-   * Simulator lập tức làm lưu lượng bơm tụt dốc về 0.3 LPM và pH vọt lên 8.2.
-3. **Cảnh báo nổ:**
-   * Backend phát hiện lưu lượng $< 1.0\text{ LPM}$ và $\text{pH} > 7.6$, lập tức ghi log `[FARM_ALERT]`.
-   * **Datadog Monitor** lập tức chuyển sang trạng thái **ALERT (Màu Đỏ)**:
-     > `🌱 [CRITICAL] Giàn xà lách HYDROPONIC-RACK-01 bị tắc nghẽn ống tuần hoàn & pH kiềm hóa (8.2)! Nguy cơ cháy rễ!`
+### BƯỚC 1: PHÁT HIỆN (DETECT) — "Nhận cảnh báo tức thì từ Phần cứng & Cloud"
+1. **Trạng thái ổn định ban đầu:**
+   * Trên Wokwi: Đèn xanh dương `Filter Pump` sáng, đèn xanh lá `Auto Flush / Oxy` sáng, OLED hiển thị `STATUS: [OPTIMAL]`.
+   * Trên Web (`http://127.0.0.1:8000/`) & Trang Dữ liệu (`/data`): Hiển thị `Live: MongoDB (OK)` và `HỆ THỐNG ỔN ĐỊNH`.
+2. **Kích hoạt sự cố:** Chọn **1 trong 3 cách**:
+   * **Cách 1 (Phần cứng Wokwi):** Gạt công tắc `Fault Switch` trên mạch Wokwi sang phải.
+   * **Cách 2 (Web UI):** Chọn `TANK-01` và bấm nút **🚨 Gây Sự Cố (Kẹt Lọc & Tăng pH)**.
+   * **Cách 3 (CLI):** Chạy `python scripts/trigger_incident.py --fault --device AQUA-TANK-01`.
+3. **Phản ứng tức thì (`< 0.2s`):**
+   * **Wokwi ESP32:** Đèn đỏ `Critical Alarm` bật sáng, `Filter Pump` tắt, còi `Buzzer` kêu, OLED chuyển sang `STATUS: [CLOG ALERT!]`.
+   * **MongoDB Atlas:** Tạo bản ghi `status: "ACTIVE"` trong `smart_aquarium_iot.incidents` lưu `trigger_reading` + `dd_trace_id`.
+   * **Datadog:** Ghi log error `[AQUA_ALERT]`, bắn Event Stream, tăng `smartfarm.alerts.count` và kích hoạt Monitor P1 (`345173530` / `345174672`).
 
 ---
 
-### BƯỚC 2: ĐIỀU TRA (INVESTIGATE) - "Tìm ra nguyên nhân gốc rễ"
-1. **Truy vết qua Datadog APM & Logs:**
-   * Mở giao diện **Datadog Logs**: Thấy log error đỏ xuất hiện với device `HYDROPONIC-RACK-01`.
-   * Bấm nút **View Trace** từ dòng log để nhảy sang **Datadog APM Tracing**:
-     * Thấy span HTTP `POST /api/telemetry/ingest`.
-     * Xem chi tiết metadata tag: Thấy trường `pump_flow_lpm = 0.2` và `water_level_pct = 15%`.
-2. **Đối chiếu với MongoDB Aggregation Analytics:**
-   * Gọi API phân tích xu hướng:
-     ```http
-     GET http://127.0.0.1:8000/api/analytics/trend?rack_id=HYDROPONIC-RACK-01
-     ```
-   * Kết quả sử dụng toán tử `$setWindowFields` của MongoDB cho thấy `movingAvgFlowLpm` giảm dốc đứng liên tục qua 5 mẫu đo $\to$ **Nguyên nhân gốc rễ:** Nghẹt cơ học tại đường ống cấp hồi lưu làm nước không thể tuần hoàn, dẫn đến kiềm hóa cục bộ dung dịch bồn rễ.
+### BƯỚC 2: ĐIỀU TRA (INVESTIGATE) — "Truy vết nguyên nhân bằng Logs, Traces & MongoDB Window Functions"
+1. **Truy vết trên Datadog:**
+   * Mở Alert Monitor / Dashboard `n72-nmb-pp6` → xem dòng log `[AQUA_ALERT]` gắn tag `rack_id:AQUA-TANK-01`, `zone:Living Room 1F`, `dd.trace_id`.
+   * Kiểm tra đồ thị `smartfarm.pump_flow_lpm` tụt `< 1.0 LPM` cùng lúc `smartfarm.ph` vượt `8.1` và `smartfarm.ingest.latency_ms` vẫn ổn định (loại trừ lỗi database chậm, khẳng định lỗi vật lý tại lọc bể).
+2. **Đối chiếu trên Web (`/data`) & MongoDB Aggregation:**
+   * Biểu đồ Chart.js tại `/data` (gọi `GET /api/analytics/trend?rack_id=AQUA-TANK-01`) chạy pipeline **`$setWindowFields`** 5 mẫu gần nhất, hiển thị rõ đường `movingAvgFlowLpm` rơi thẳng đứng và cảnh báo trong bảng **Nhật ký Sự cố (`incidents`)**.
 
 ---
 
-### BƯỚC 3: PHẢN ỨNG (RESPOND) - "Khắc phục và chứng minh bằng dữ liệu"
-1. **Thực thi hành động khắc phục:**
-   * Người thuyết trình chạy lệnh xử lý sự cố:
-     ```bash
-     python scripts/trigger_incident.py --resolve --device HYDROPONIC-RACK-01
-     ```
-   * Hoặc bấm nút xanh **"Khắc phục tự động"** trên giao diện Web UI.
-   * Hệ thống kích hoạt chu trình van xả ngược áp lực cao (Reverse Pulse Flush) để thổi cặn rễ cây và bơm định lượng pH-Down.
-2. **Chứng minh hệ thống đã hồi phục:**
-   * Đường ống được thông tắc $\to$ Lưu lượng nước vọt lên lại $4.5\text{ LPM}$.
-   * Dung dịch được cân bằng $\to$ Độ pH hạ dần từ $8.2$ về mức $6.1$ lý tưởng.
-   * Mực nước bồn dâng lên lại $88\%$.
-   * **Datadog Dashboard:** Đồ thị đường lưu lượng và pH phục hồi về vùng xanh an toàn.
-   * **Datadog Monitor:** Tự động chuyển từ **ALERT (Đỏ)** sang **OK (Xanh)**.
+### BƯỚC 3: PHẢN ỨNG (RESPOND) — "Khắc phục 1-Click & Chứng minh bằng MTTR"
+1. **Thực thi khắc phục:**
+   * Gạt trả `Fault Switch` (nếu đang bật) rồi bấm nút xanh **🛠️ Xả Ngược & Cân Bằng pH** trên Web Điều khiển (hoặc chạy `python scripts/trigger_incident.py --resolve --device AQUA-TANK-01`, hoặc gọi webhook `POST /api/webhooks/datadog` với `"auto_remediate": true`).
+2. **Kết quả xác minh:**
+   * **Mạch Wokwi:** Tắt còi & đèn đỏ, đèn `Filter Pump` sáng lại, màn hình OLED trở về `STATUS: [OPTIMAL]`.
+   * **MongoDB Atlas:** Incident `AQUA-TANK-01` chuyển từ `ACTIVE` $\to$ `RESOLVED` và tự động tính chính xác **`mttr_seconds`**.
+   * **Datadog:** Gửi metric `smartfarm.incidents.mttr_seconds`, log `[INCIDENT_RESOLVED]` và Event xanh xác nhận bể cá hồi phục hoàn toàn.

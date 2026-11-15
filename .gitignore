@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.pytest_cache/
 
 # Environments
 .env
@@ -19,3 +20,12 @@ venv.bak/
 
 # Logs
 *.log
+
+# Runtime simulator control state
+simulator_control.json
+
+# PlatformIO build artifacts
+.pio/
+
+# Firebase CLI cache
+.firebase/

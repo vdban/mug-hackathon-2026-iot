@@ -9,13 +9,39 @@ Tuân thủ toàn bộ kỹ thuật trong Workshop của MongoDB (Slides 16-20):
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any, List
 
+
+def get_latest_telemetry_pipeline(minutes: int = 120) -> List[Dict[str, Any]]:
+    """
+    Lấy bản ghi telemetry mới nhất của từng giàn thủy canh từ MongoDB Time Series Collection.
+    """
+    start_time = datetime.now(timezone.utc) - timedelta(minutes=minutes)
+    return [
+        {"$match": {"ts": {"$gte": start_time}}},
+        {"$sort": {"ts": -1}},
+        {
+            "$group": {
+                "_id": "$sensor.id",
+                "ts": {"$first": "$ts"},
+                "sensor": {"$first": "$sensor"},
+                "ph": {"$first": "$ph"},
+                "ec_ppm": {"$first": "$ec_ppm"},
+                "water_temp": {"$first": "$water_temp"},
+                "water_level_pct": {"$first": "$water_level_pct"},
+                "pump_flow_lpm": {"$first": "$pump_flow_lpm"},
+            }
+        },
+        {"$sort": {"_id": 1}},
+        {"$project": {"_id": 0}},
+    ]
+
+
 def get_hourly_summary_pipeline(rack_id: Optional[str] = None, hours: int = 24) -> List[Dict[str, Any]]:
     """
     Aggregation Pipeline tính chỉ số trung bình theo từng giờ của các giàn thủy canh.
     (Slide 18 trong workshop)
     """
     start_time = datetime.now(timezone.utc) - timedelta(hours=hours)
-    
+
     match_stage: Dict[str, Any] = {
         "ts": {"$gte": start_time}
     }

@@ -1,0 +1,49 @@
+services:
+  datadog-agent:
+    image: gcr.io/datadoghq/agent:7
+    container_name: dd-agent-hydroponics
+    environment:
+      - DD_API_KEY=${DD_API_KEY}
+      - DD_SITE=${DD_SITE:-datadoghq.com}
+      - DD_APM_ENABLED=true
+      - DD_APM_NON_LOCAL_TRAFFIC=true
+      - DD_LOGS_ENABLED=true
+      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+      - DD_ENV=${DD_ENV:-hackathon}
+    ports:
+      - "8126:8126"
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: smart-hydroponics-api
+    env_file:
+      - .env
+    environment:
+      - DD_AGENT_HOST=datadog-agent
+      - DD_TRACE_AGENT_PORT=8126
+      - DD_LOGS_INJECTION=true
+      - DD_SERVICE=${DD_SERVICE:-smart-hydroponics-service}
+      - DD_ENV=${DD_ENV:-hackathon}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - datadog-agent
+    restart: unless-stopped
+
+  simulator:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: smart-hydroponics-simulator
+    working_dir: /app
+    command: ["python", "simulator/sensor_simulator.py", "--interval", "2.0"]
+    env_file:
+      - .env
+    environment:
+      - BACKEND_BASE_URL=http://backend:8000
+    depends_on:
+      - backend
+    restart: unless-stopped

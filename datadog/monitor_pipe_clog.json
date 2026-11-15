@@ -1,0 +1,22 @@
+{
+  "name": "[P1] Smart Hydroponics - Pipe Clogging Detected (Flow < 1.0 LPM)",
+  "type": "metric alert",
+  "query": "avg(last_1m):avg:smartfarm.pump_flow_lpm{*} by {rack_id} < 1",
+  "message": "🌱 [CRITICAL] Giàn thủy canh {{rack_id.name}} có lưu lượng bơm tụt xuống dưới 1.0 LPM (nguy cơ tắc nghẽn rễ & cháy cây).\n\nKiểm tra ngay Log & Trace liên quan tại service:smart-hydroponics-service và kích hoạt Reverse Pulse Flush qua /api/incident/respond.",
+  "tags": [
+    "env:hackathon",
+    "service:smart-hydroponics-service",
+    "domain:agritech"
+  ],
+  "options": {
+    "thresholds": {
+      "critical": 1.0,
+      "warning": 2.0
+    },
+    "notify_no_data": false,
+    "require_full_window": false,
+    "notify_audit": false,
+    "include_tags": true
+  },
+  "priority": 1
+}

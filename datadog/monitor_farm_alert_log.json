@@ -1,0 +1,20 @@
+{
+  "name": "[P1] Smart Hydroponics - FARM_ALERT Log Spike",
+  "type": "log alert",
+  "query": "logs(\"service:smart-hydroponics-service status:error \\\"FARM_ALERT\\\"\").index(\"*\").rollup(\"count\").last(\"1m\") > 2",
+  "message": "🚨 [CRITICAL] Phát hiện chuỗi log [FARM_ALERT] liên tiếp (tắc nghẽn ống hồi lưu hoặc pH kiềm hóa > 7.6)!\n\nMở View Trace trên log để điều tra MongoDB insert_many & window trend.\n{{#is_alert}}Có thể gắn Webhook tới POST /api/webhooks/datadog để tự động xả ngược.{{/is_alert}}",
+  "tags": [
+    "env:hackathon",
+    "service:smart-hydroponics-service"
+  ],
+  "options": {
+    "thresholds": {
+      "critical": 2,
+      "warning": 1
+    },
+    "enable_logs_sample": true,
+    "notify_no_data": false,
+    "include_tags": true
+  },
+  "priority": 1
+}
