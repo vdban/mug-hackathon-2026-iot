@@ -225,7 +225,7 @@ def _wokwi_auto_bridge_worker(stop_event: threading.Event) -> None:
 async def lifespan(_fastapi_app: FastAPI):
     stop_event = threading.Event()
     bridge_thread: Optional[threading.Thread] = None
-    if os.getenv("WOKWI_AUTO_BRIDGE", "1") != "0":
+    if os.getenv("WOKWI_AUTO_BRIDGE", "1") != "0" and not os.getenv("RENDER"):
         bridge_thread = threading.Thread(
             target=_wokwi_auto_bridge_worker,
             args=(stop_event,),
@@ -233,6 +233,8 @@ async def lifespan(_fastapi_app: FastAPI):
             daemon=True,
         )
         bridge_thread.start()
+    else:
+        logger.info("[CLOUD MODE] Running on cloud environment — Wokwi local serial bridge disabled.")
     try:
         yield
     finally:

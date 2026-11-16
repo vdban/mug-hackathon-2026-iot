@@ -17,7 +17,9 @@ def get_database():
     if client is None:
         client = MongoClient(
             MONGODB_URI,
-            serverSelectionTimeoutMS=5000,
+            serverSelectionTimeoutMS=2500,
+            connectTimeoutMS=2500,
+            socketTimeoutMS=3000,
             maxPoolSize=50,
             retryWrites=True
         )

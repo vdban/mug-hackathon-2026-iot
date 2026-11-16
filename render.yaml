@@ -25,3 +25,5 @@ services:
         value: smart-aquarium-service
       - key: DD_TRACE_ENABLED
         value: "false"
+      - key: WOKWI_AUTO_BRIDGE
+        value: "0"
