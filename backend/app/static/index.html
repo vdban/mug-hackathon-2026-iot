@@ -300,7 +300,7 @@
         <input
           id="apiBaseInput"
           type="text"
-          placeholder="http://127.0.0.1:8000"
+          placeholder="https://smart-aquarium-backend.onrender.com"
           class="flex-1 min-w-[200px] px-3.5 py-1.5 rounded-full text-xs font-mono bg-white/85 border border-white text-sky-950 focus:outline-none focus:ring-2 focus:ring-cyan-400 shadow-inner"
         />
         <button onclick="saveApiBaseUrl()" class="gel-btn gel-aqua px-4 py-1.5 text-xs">
@@ -597,7 +597,7 @@
       if (loc.protocol.startsWith('http') && !loc.hostname.endsWith('web.app') && !loc.hostname.endsWith('firebaseapp.com') && loc.port !== '5000') {
         return loc.origin;
       }
-      return 'http://127.0.0.1:8000';
+      return 'https://smart-aquarium-backend.onrender.com';
     }
 
     let API_BASE = resolveDefaultApiBase();

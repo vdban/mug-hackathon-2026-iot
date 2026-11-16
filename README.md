@@ -17,6 +17,7 @@ Trong vận hành bể cá cảnh và thủy sinh tuần hoàn, hai sự cố ng
 * **Trang Điều khiển (Web Control):** https://smart-aquarium-mug-2026.web.app/
 * **Trang Dữ liệu & Biểu đồ:** https://smart-aquarium-mug-2026.web.app/data
 * **Slide trình chiếu (10 trang):** https://smart-aquarium-mug-2026.web.app/slides
+* **Swagger API Docs (Cloud Backend):** https://smart-aquarium-backend.onrender.com/docs
 * **Datadog Live Dashboard:** https://app.datadoghq.com/dashboard/n72-nmb-pp6/smart-hydroponics-fleet-operations-mongodb--datadog
 
 ---
@@ -116,6 +117,7 @@ python scripts/provision_datadog.py
   * **Trang Điều khiển:** https://smart-aquarium-mug-2026.web.app/
   * **Trang Dữ liệu & Biểu đồ:** https://smart-aquarium-mug-2026.web.app/data
   * **Slide trình chiếu:** https://smart-aquarium-mug-2026.web.app/slides
+  * **Swagger API Docs (Cloud Backend):** https://smart-aquarium-backend.onrender.com/docs
   * **Datadog Live Dashboard:** https://app.datadoghq.com/dashboard/n72-nmb-pp6/smart-hydroponics-fleet-operations-mongodb--datadog
 
 ### Bước 4: Chạy mạch ESP32 trên Wokwi (hoặc Simulator)
