@@ -19,8 +19,6 @@ Trong vận hành bể cá cảnh và thủy sinh tuần hoàn, hai sự cố ng
 * **Slide trình chiếu (10 trang):** https://smart-aquarium-mug-2026.web.app/slides
 * **Datadog Live Dashboard:** https://app.datadoghq.com/dashboard/n72-nmb-pp6/smart-hydroponics-fleet-operations-mongodb--datadog
 
-*(Mẹo: Khi mở bản Web công khai ở trên, nếu muốn kết nối thẳng với FastAPI Backend & MongoDB đang chạy trên máy cá nhân, bấm nút **Kết nối API** trên Web và dán link HTTPS từ script chia sẻ bên dưới).*
-
 ---
 
 ## 2. Cách hoạt động & Cấu trúc thư mục
@@ -114,16 +112,11 @@ python scripts/provision_datadog.py
   cd backend
   python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
   ```
-* **Các trang Web khi chạy trên máy local (`localhost`):**
-  * **Trang Điều khiển:** http://127.0.0.1:8000/
-  * **Trang Dữ liệu & Biểu đồ:** http://127.0.0.1:8000/data
-  * **Slide trình chiếu:** http://127.0.0.1:8000/slides
-  * **Swagger API Docs:** http://127.0.0.1:8000/docs
-* **Chia sẻ Backend Local & Swagger `/docs` ra Internet để giám khảo/Web Firebase truy cập được:**
-  ```powershell
-  powershell -ExecutionPolicy Bypass -File scripts\share_public_backend.ps1
-  ```
-  Script sẽ mở một HTTPS tunnel công khai tới cổng `8000` (truy cập được `<url-tunnel>/docs` và dán vào thanh `?api=<url-tunnel>` trên `https://smart-aquarium-mug-2026.web.app/`).
+* **Link Web & Dashboard đã deploy:**
+  * **Trang Điều khiển:** https://smart-aquarium-mug-2026.web.app/
+  * **Trang Dữ liệu & Biểu đồ:** https://smart-aquarium-mug-2026.web.app/data
+  * **Slide trình chiếu:** https://smart-aquarium-mug-2026.web.app/slides
+  * **Datadog Live Dashboard:** https://app.datadoghq.com/dashboard/n72-nmb-pp6/smart-hydroponics-fleet-operations-mongodb--datadog
 
 ### Bước 4: Chạy mạch ESP32 trên Wokwi (hoặc Simulator)
 * **Với Wokwi ESP32:** Mở [`wokwi/diagram.json`](wokwi/diagram.json) trong VS Code và bấm **Start Simulation** (Backend sẽ tự kết nối cổng `127.0.0.1:4000`). Nếu sửa code [`wokwi/sketch.ino`](wokwi/sketch.ino), biên dịch lại firmware bằng:
