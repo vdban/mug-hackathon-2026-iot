@@ -438,11 +438,6 @@
     };
 
     let fbApp = null, fbAuth = null, googleProvider = null;
-    try {
-      fbApp = initializeApp(firebaseConfig);
-      fbAuth = getAuth(fbApp);
-      googleProvider = new GoogleAuthProvider();
-    } catch (_) {}
 
     function applyUserUI(user) {
       window.currentUser = user;
@@ -473,10 +468,10 @@
       }
     }
 
-    if (!fbAuth || firebaseConfig.apiKey === "YOUR_FIREBASE_WEB_API_KEY") {
-      const savedDemo = localStorage.getItem('DEMO_GOOGLE_USER');
-      applyUserUI(savedDemo ? JSON.parse(savedDemo) : null);
-    } else {
+    function initFirebaseAuth(cfg) {
+      fbApp = initializeApp(cfg);
+      fbAuth = getAuth(fbApp);
+      googleProvider = new GoogleAuthProvider();
       onAuthStateChanged(fbAuth, (firebaseUser) => {
         if (firebaseUser) {
           localStorage.removeItem('DEMO_GOOGLE_USER');
@@ -487,6 +482,24 @@
         }
       });
     }
+
+    (async () => {
+      try {
+        if (firebaseConfig.apiKey === "YOUR_FIREBASE_WEB_API_KEY") {
+          const res = await fetch('https://smart-aquarium-mug-2026.web.app/__/firebase/init.json', { cache: 'no-store' });
+          if (res.ok) {
+            const runtimeCfg = await res.json();
+            Object.assign(firebaseConfig, runtimeCfg);
+          }
+        }
+        if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_FIREBASE_WEB_API_KEY") {
+          initFirebaseAuth(firebaseConfig);
+          return;
+        }
+      } catch (_) {}
+      const savedDemo = localStorage.getItem('DEMO_GOOGLE_USER');
+      applyUserUI(savedDemo ? JSON.parse(savedDemo) : null);
+    })();
 
     window.signInWithGoogle = async function () {
       try {

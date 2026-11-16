@@ -42,6 +42,10 @@
         "destination": "/data.html"
       },
       {
+        "source": "/slides",
+        "destination": "/slides.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
